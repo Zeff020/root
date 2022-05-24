@@ -74,10 +74,10 @@ using namespace std;
 ClassImp(RooPlot);
 
 
-Bool_t RooPlot::_addDirStatus = kTRUE ;
+bool RooPlot::_addDirStatus = true ;
 
-Bool_t RooPlot::addDirectoryStatus() { return _addDirStatus; }
-Bool_t RooPlot::setAddDirectoryStatus(Bool_t flag) { Bool_t ret = flag ; _addDirStatus = flag ; return ret ; }
+bool RooPlot::addDirectoryStatus() { return _addDirStatus; }
+bool RooPlot::setAddDirectoryStatus(bool flag) { bool ret = flag ; _addDirStatus = flag ; return ret ; }
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -95,10 +95,10 @@ RooPlot::RooPlot()
 ////////////////////////////////////////////////////////////////////////////////
 /// Constructor of RooPlot with range [xmin,xmax]
 
-RooPlot::RooPlot(Double_t xmin, Double_t xmax)
+RooPlot::RooPlot(double xmin, double xmax)
 {
   _hist = new TH1D(histName(),"A RooPlot",100,xmin,xmax) ;
-  _hist->Sumw2(kFALSE) ;
+  _hist->Sumw2(false) ;
   _hist->GetSumw2()->Set(0) ;
   _hist->SetDirectory(nullptr);
 
@@ -112,11 +112,11 @@ RooPlot::RooPlot(Double_t xmin, Double_t xmax)
 ////////////////////////////////////////////////////////////////////////////////
 /// Construct of a two-dimensional RooPlot with ranges [xmin,xmax] x [ymin,ymax]
 
-RooPlot::RooPlot(Double_t xmin, Double_t xmax, Double_t ymin, Double_t ymax) :
+RooPlot::RooPlot(double xmin, double xmax, double ymin, double ymax) :
   _defYmax(0)
 {
   _hist = new TH1D(histName(),"A RooPlot",100,xmin,xmax) ;
-  _hist->Sumw2(kFALSE) ;
+  _hist->Sumw2(false) ;
   _hist->GetSumw2()->Set(0) ;
   _hist->SetDirectory(nullptr);
 
@@ -134,7 +134,7 @@ RooPlot::RooPlot(const RooAbsRealLValue &var1, const RooAbsRealLValue &var2) :
   _defYmax(0)
 {
   _hist = new TH1D(histName(),"A RooPlot",100,var1.getMin(),var1.getMax()) ;
-  _hist->Sumw2(kFALSE) ;
+  _hist->Sumw2(false) ;
   _hist->GetSumw2()->Set(0) ;
   _hist->SetDirectory(nullptr);
 
@@ -150,8 +150,8 @@ RooPlot::RooPlot(const RooAbsRealLValue &var1, const RooAbsRealLValue &var2) :
   }
   SetMinimum(var2.getMin());
   SetMaximum(var2.getMax());
-  SetXTitle(var1.getTitle(kTRUE));
-  SetYTitle(var2.getTitle(kTRUE));
+  SetXTitle(var1.getTitle(true));
+  SetYTitle(var2.getTitle(true));
   initialize();
 }
 
@@ -162,18 +162,18 @@ RooPlot::RooPlot(const RooAbsRealLValue &var1, const RooAbsRealLValue &var2) :
 /// of [xmin,xmax] x [ymin,ymax]
 
 RooPlot::RooPlot(const RooAbsRealLValue &var1, const RooAbsRealLValue &var2,
-       Double_t xmin, Double_t xmax, Double_t ymin, Double_t ymax) :
+       double xmin, double xmax, double ymin, double ymax) :
   _defYmax(0)
 {
   _hist = new TH1D(histName(),"A RooPlot",100,xmin,xmax) ;
-  _hist->Sumw2(kFALSE) ;
+  _hist->Sumw2(false) ;
   _hist->GetSumw2()->Set(0) ;
   _hist->SetDirectory(nullptr);
 
   SetMinimum(ymin);
   SetMaximum(ymax);
-  SetXTitle(var1.getTitle(kTRUE));
-  SetYTitle(var2.getTitle(kTRUE));
+  SetXTitle(var1.getTitle(true));
+  SetYTitle(var2.getTitle(true));
   initialize();
 }
 
@@ -182,10 +182,10 @@ RooPlot::RooPlot(const RooAbsRealLValue &var1, const RooAbsRealLValue &var2,
 /// Create an 1-dimensional with all properties taken from 'var', but
 /// with an explicit range [xmin,xmax] and a default binning of 'nbins'
 
-RooPlot::RooPlot(const char* name, const char* title, const RooAbsRealLValue &var, Double_t xmin, Double_t xmax, Int_t nbins)
+RooPlot::RooPlot(const char* name, const char* title, const RooAbsRealLValue &var, double xmin, double xmax, Int_t nbins)
 {
   _hist = new TH1D(name,title,nbins,xmin,xmax) ;
-  _hist->Sumw2(kFALSE) ;
+  _hist->Sumw2(false) ;
   _hist->GetSumw2()->Set(0) ;
   _hist->SetDirectory(nullptr);
 
@@ -193,7 +193,7 @@ RooPlot::RooPlot(const char* name, const char* title, const RooAbsRealLValue &va
   _plotVarSet = (RooArgSet*) RooArgSet(var).snapshot() ;
   _plotVarClone= (RooAbsRealLValue*)_plotVarSet->find(var.GetName()) ;
 
-  TString xtitle= var.getTitle(kTRUE);
+  TString xtitle= var.getTitle(true);
   SetXTitle(xtitle.Data());
 
   initialize();
@@ -206,10 +206,10 @@ RooPlot::RooPlot(const char* name, const char* title, const RooAbsRealLValue &va
 /// Create an 1-dimensional with all properties taken from 'var', but
 /// with an explicit range [xmin,xmax] and a default binning of 'nbins'
 
-RooPlot::RooPlot(const RooAbsRealLValue &var, Double_t xmin, Double_t xmax, Int_t nbins)
+RooPlot::RooPlot(const RooAbsRealLValue &var, double xmin, double xmax, Int_t nbins)
 {
   _hist = new TH1D(histName(),"RooPlot",nbins,xmin,xmax) ;
-  _hist->Sumw2(kFALSE) ;
+  _hist->Sumw2(false) ;
   _hist->GetSumw2()->Set(0) ;
   _hist->SetDirectory(nullptr);
 
@@ -217,7 +217,7 @@ RooPlot::RooPlot(const RooAbsRealLValue &var, Double_t xmin, Double_t xmax, Int_
   _plotVarSet = (RooArgSet*) RooArgSet(var).snapshot() ;
   _plotVarClone= (RooAbsRealLValue*)_plotVarSet->find(var.GetName()) ;
 
-  TString xtitle= var.getTitle(kTRUE);
+  TString xtitle= var.getTitle(true);
   SetXTitle(xtitle.Data());
 
   TString title("A RooPlot of \"");
@@ -238,7 +238,7 @@ RooPlot::RooPlot(const RooAbsRealLValue &var, Double_t xmin, Double_t xmax, Int_
 /// \param[in] xmin Left edge of the x-axis
 /// \param[in] xmax Right edge of the x-axis
 /// \param[in] nBins number of bins on the x-axis
-RooPlot* RooPlot::frame(const RooAbsRealLValue &var, Double_t xmin, Double_t xmax, Int_t nBins){
+RooPlot* RooPlot::frame(const RooAbsRealLValue &var, double xmin, double xmax, Int_t nBins){
   return new RooPlot(var,xmin,xmax,nBins);
 }
 
@@ -255,7 +255,7 @@ RooPlot* RooPlot::frameWithLabels(const RooAbsRealLValue &var){
   int nbins = var.getBinning().numBins();
 
   pl->_hist = new TH1D(pl->histName(),"RooPlot",nbins,var.getMin(),var.getMax()) ;
-  pl->_hist->Sumw2(kFALSE) ;
+  pl->_hist->Sumw2(false) ;
   pl->_hist->GetSumw2()->Set(0) ;
   pl->_hist->SetDirectory(nullptr);
 
@@ -269,7 +269,7 @@ RooPlot* RooPlot::frameWithLabels(const RooAbsRealLValue &var){
   pl->_plotVarSet = (RooArgSet*) RooArgSet(var).snapshot() ;
   pl->_plotVarClone= (RooAbsRealLValue*)pl->_plotVarSet->find(var.GetName()) ;
 
-  TString xtitle= var.getTitle(kTRUE);
+  TString xtitle= var.getTitle(true);
   pl->SetXTitle(xtitle.Data());
 
   TString title("A RooPlot of \"");
@@ -305,7 +305,7 @@ void RooPlot::initialize()
   }
 
   // We do not have useful stats of our own
-  _hist->SetStats(kFALSE);
+  _hist->SetStats(false);
   _hist->SetDirectory(nullptr);
   // Default vertical padding of our enclosed objects
   setPadFactor(0.05);
@@ -370,7 +370,7 @@ void RooPlot::SetDirectory(TDirectory *dir) {
 
 void RooPlot::updateNormVars(const RooArgSet &vars)
 {
-  if(0 == _normVars) _normVars= (RooArgSet*) vars.snapshot(kTRUE);
+  if(0 == _normVars) _normVars= (RooArgSet*) vars.snapshot(true);
 }
 
 
@@ -410,7 +410,7 @@ Stat_t RooPlot::GetBinContent(Int_t, Int_t, Int_t) const
 /// of the object with this call, and the object will be deleted
 /// when its containing plot object is destroyed.
 
-void RooPlot::addObject(TObject *obj, Option_t *drawOptions, Bool_t invisible)
+void RooPlot::addObject(TObject *obj, Option_t *drawOptions, bool invisible)
 {
   if(0 == obj) {
     coutE(InputArguments) << fName << "::addObject: called with a null pointer" << endl;
@@ -429,7 +429,7 @@ void RooPlot::addObject(TObject *obj, Option_t *drawOptions, Bool_t invisible)
 /// ownership of the object with this call, and the object will be
 /// deleted when its containing plot object is destroyed.
 
-void RooPlot::addTH1(TH1 *hist, Option_t *drawOptions, Bool_t invisible)
+void RooPlot::addTH1(TH1 *hist, Option_t *drawOptions, bool invisible)
 {
   if(0 == hist) {
     coutE(InputArguments) << fName << "::addTH1: called with a null pointer" << endl;
@@ -558,7 +558,7 @@ namespace {
 /// is zero unless we are plotting an object that takes on negative values.
 /// This call transfers ownership of the plotable object to this class.
 /// The plotable object will be deleted when this plot object is deleted.
-void RooPlot::addPlotable(RooPlotable *plotable, Option_t *drawOptions, Bool_t invisible, Bool_t refreshNorm)
+void RooPlot::addPlotable(RooPlotable *plotable, Option_t *drawOptions, bool invisible, bool refreshNorm)
 {
   // update our y-axis label and limits
   updateYAxis(plotable->getYAxisMin(),plotable->getYAxisMax(),plotable->getYAxisLabel());
@@ -604,14 +604,14 @@ void RooPlot::updateFitRangeNorm(const TH1* hist)
 /// Update our plot normalization over our plot variable's fit range,
 /// which will be determined by the first suitable object added to our plot.
 
-void RooPlot::updateFitRangeNorm(const RooPlotable* rp, Bool_t refreshNorm)
+void RooPlot::updateFitRangeNorm(const RooPlotable* rp, bool refreshNorm)
 {
   if (_normNumEvts != 0) {
 
     // If refresh feature is disabled stop here
     if (!refreshNorm) return ;
 
-    Double_t corFac(1.0) ;
+    double corFac(1.0) ;
     if (dynamic_cast<const RooHist*>(rp)) corFac = _normBinWidth/rp->getFitRangeBinW() ;
 
 
@@ -647,13 +647,13 @@ void RooPlot::updateFitRangeNorm(const RooPlotable* rp, Bool_t refreshNorm)
 /// in y is (ymin,ymax). Use the specified y-axis label if we don't
 /// have one assigned already.
 
-void RooPlot::updateYAxis(Double_t ymin, Double_t ymax, const char *label)
+void RooPlot::updateYAxis(double ymin, double ymax, const char *label)
 {
   // force an implicit lower limit of zero if appropriate
   if(GetMinimum() == 0 && ymin > 0) ymin= 0;
 
   // calculate padded values
-  Double_t ypad= getPadFactor()*(ymax-ymin);
+  double ypad= getPadFactor()*(ymax-ymin);
   ymax+= ypad;
   if(ymin < 0) ymin-= ypad;
 
@@ -755,11 +755,11 @@ void RooPlot::printArgs(ostream& os) const
 void RooPlot::printValue(ostream& os) const
 {
   os << "(" ;
-  Bool_t first(kTRUE) ;
+  bool first(true) ;
   for(auto const& item : _items) {
     TObject &obj = *item.first;
     if (first) {
-      first=kFALSE ;
+      first=false ;
     } else {
       os << "," ;
     }
@@ -780,7 +780,7 @@ void RooPlot::printValue(ostream& os) const
 ////////////////////////////////////////////////////////////////////////////////
 /// Frame detailed printing
 
-void RooPlot::printMultiline(ostream& os, Int_t /*content*/, Bool_t verbose, TString indent) const
+void RooPlot::printMultiline(ostream& os, Int_t /*content*/, bool verbose, TString indent) const
 {
   TString deeper(indent);
   deeper.Append("    ");
@@ -910,7 +910,7 @@ RooHist* RooPlot::getHist(const char* name) const
 ////////////////////////////////////////////////////////////////////////////////
 /// Remove object with given name, or last object added if no name is given.
 
-void RooPlot::remove(const char* name, Bool_t deleteToo)
+void RooPlot::remove(const char* name, bool deleteToo)
 {
   if(name == nullptr) {
     if(!_items.empty()) {
@@ -946,9 +946,9 @@ void moveBefore(Iter before, Iter target) {
 ////////////////////////////////////////////////////////////////////////////////
 /// Change the order in which our contained objects are drawn so that
 /// the target object is drawn just before the specified object.
-/// Returns kFALSE if either object does not exist.
+/// Returns false if either object does not exist.
 
-Bool_t RooPlot::drawBefore(const char *before, const char *target)
+bool RooPlot::drawBefore(const char *before, const char *target)
 {
   auto iterBefore = findItem(before);
   auto iterTarget = findItem(target);
@@ -961,9 +961,9 @@ Bool_t RooPlot::drawBefore(const char *before, const char *target)
 ////////////////////////////////////////////////////////////////////////////////
 /// Change the order in which our contained objects are drawn so that
 /// the target object is drawn just after the specified object.
-/// Returns kFALSE if either object does not exist.
+/// Returns false if either object does not exist.
 
-Bool_t RooPlot::drawAfter(const char *after, const char *target)
+bool RooPlot::drawAfter(const char *after, const char *target)
 {
   auto iterAfter = findItem(after);
   auto iterTarget = findItem(target);
@@ -1033,9 +1033,9 @@ TString RooPlot::getDrawOptions(const char *name) const
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Register the specified drawing options for the named object.
-/// Return kFALSE if the named object cannot be found.
+/// Return false if the named object cannot be found.
 
-Bool_t RooPlot::setDrawOptions(const char *name, TString options)
+bool RooPlot::setDrawOptions(const char *name, TString options)
 {
   auto item = findItem(name);
   if(item == _items.end()) return false;
@@ -1050,7 +1050,7 @@ Bool_t RooPlot::setDrawOptions(const char *name, TString options)
 ////////////////////////////////////////////////////////////////////////////////
 /// Returns true of object with given name is set to be invisible
 
-Bool_t RooPlot::getInvisible(const char* name) const
+bool RooPlot::getInvisible(const char* name) const
 {
   auto item = findItem(name);
   if(item == _items.end()) return false;
@@ -1063,7 +1063,7 @@ Bool_t RooPlot::getInvisible(const char* name) const
 /// If flag is true object with 'name' is set to be invisible
 /// i.e. it is not drawn when Draw() is called
 
-void RooPlot::setInvisible(const char* name, Bool_t flag)
+void RooPlot::setInvisible(const char* name, bool flag)
 {
   auto item = findItem(name);
   if(item != _items.end()) {
@@ -1079,7 +1079,7 @@ void RooPlot::setInvisible(const char* name, Bool_t flag)
 ////////////////////////////////////////////////////////////////////////////////
 /// Set maximum value of Y axis
 
-void RooPlot::SetMaximum(Double_t maximum)
+void RooPlot::SetMaximum(double maximum)
 {
   _hist->SetMaximum(maximum==-1111?_defYmax:maximum) ;
 }
@@ -1089,7 +1089,7 @@ void RooPlot::SetMaximum(Double_t maximum)
 ////////////////////////////////////////////////////////////////////////////////
 /// Set minimum value of Y axis
 
-void RooPlot::SetMinimum(Double_t minimum)
+void RooPlot::SetMinimum(double minimum)
 {
   _hist->SetMinimum(minimum==-1111?_defYmin:minimum) ;
 }
@@ -1110,7 +1110,7 @@ void RooPlot::SetMinimum(Double_t minimum)
 /// \note The \f$ \chi^2 \f$ is calculated between a *plot of the original distribution* and the data.
 /// It therefore has more rounding errors than directly calculating the \f$ \chi^2 \f$ from a PDF or
 /// function. To do this, use RooChi2Var.
-Double_t RooPlot::chiSquare(const char* curvename, const char* histname, int nFitParam) const
+double RooPlot::chiSquare(const char* curvename, const char* histname, int nFitParam) const
 {
 
   // Find curve object
@@ -1176,7 +1176,7 @@ void RooPlot::DrawOpt::initialize(const char* inRawOpt)
 {
   if (!inRawOpt) {
     drawOptions[0] = 0 ;
-    invisible=kFALSE ;
+    invisible=false ;
     return ;
   }
   strlcpy(drawOptions,inRawOpt,128) ;
@@ -1211,9 +1211,9 @@ const char* RooPlot::DrawOpt::rawOpt() const
 /// in sub ranges. An error will be printed if this function is used
 /// on sub-ranges while that information is not available
 
-Double_t RooPlot::getFitRangeNEvt(Double_t xlo, Double_t xhi) const
+double RooPlot::getFitRangeNEvt(double xlo, double xhi) const
 {
-  Double_t scaleFactor = 1.0 ;
+  double scaleFactor = 1.0 ;
   if (_normObj) {
     scaleFactor = _normObj->getFitRangeNEvt(xlo,xhi)/_normObj->getFitRangeNEvt() ;
   } else {
@@ -1276,23 +1276,23 @@ Int_t  RooPlot::GetNbinsX() const { return _hist->GetNbinsX() ; }
 /// \see TH1::GetNdivisions()
 Int_t  RooPlot::GetNdivisions(Option_t* axis) const { return _hist->GetNdivisions(axis) ; }
 /// \see TH1::GetMinimum()
-Double_t  RooPlot::GetMinimum(Double_t minval) const { return _hist->GetMinimum(minval) ; }
+double  RooPlot::GetMinimum(double minval) const { return _hist->GetMinimum(minval) ; }
 /// \see TH1::GetMaximum()
-Double_t   RooPlot::GetMaximum(Double_t maxval) const { return _hist->GetMaximum(maxval) ; }
+double   RooPlot::GetMaximum(double maxval) const { return _hist->GetMaximum(maxval) ; }
 
 
 /// \see TH1::SetAxisColor()
 void RooPlot::SetAxisColor(Color_t color, Option_t* axis) { _hist->SetAxisColor(color,axis) ; }
 /// \see TH1::SetAxisRange()
-void RooPlot::SetAxisRange(Double_t xmin, Double_t xmax, Option_t* axis) { _hist->SetAxisRange(xmin,xmax,axis) ; }
+void RooPlot::SetAxisRange(double xmin, double xmax, Option_t* axis) { _hist->SetAxisRange(xmin,xmax,axis) ; }
 /// \see TH1::SetBarOffset()
 void RooPlot::SetBarOffset(Float_t offset) { _hist->SetBarOffset(offset) ; }
 /// \see TH1::SetBarWidth()
 void RooPlot::SetBarWidth(Float_t width) { _hist->SetBarWidth(width) ; }
 /// \see TH1::SetContour()
-void RooPlot::SetContour(Int_t nlevels, const Double_t* levels) { _hist->SetContour(nlevels,levels) ; }
+void RooPlot::SetContour(Int_t nlevels, const double* levels) { _hist->SetContour(nlevels,levels) ; }
 /// \see TH1::SetContourLevel()
-void RooPlot::SetContourLevel(Int_t level, Double_t value) { _hist->SetContourLevel(level,value) ; }
+void RooPlot::SetContourLevel(Int_t level, double value) { _hist->SetContourLevel(level,value) ; }
 /// \see TH1::SetDrawOption()
 void RooPlot::SetDrawOption(Option_t* option) { _hist->SetDrawOption(option) ; }
 /// \see TH1::SetFillAttributes()
@@ -1330,7 +1330,7 @@ void RooPlot::SetNdivisions(Int_t n, Option_t* axis) { _hist->SetNdivisions(n,ax
 /// \see TH1::SetOption()
 void RooPlot::SetOption(Option_t* option) { _hist->SetOption(option) ; }
 /// Like TH1::SetStats(), but statistics boxes are *off* by default in RooFit.
-void RooPlot::SetStats(Bool_t stats) { _hist->SetStats(stats) ; }
+void RooPlot::SetStats(bool stats) { _hist->SetStats(stats) ; }
 /// \see TH1::SetTickLength()
 void RooPlot::SetTickLength(Float_t length, Option_t* axis) { _hist->SetTickLength(length,axis) ; }
 /// \see TH1::SetTitleFont()

@@ -80,6 +80,7 @@ public:
    TGraph(Int_t n, const Int_t *x, const Int_t *y);
    TGraph(Int_t n, const Float_t *x, const Float_t *y);
    TGraph(Int_t n, const Double_t *x, const Double_t *y);
+   TGraph(Int_t n, const Double_t *y, Double_t start=0., Double_t step=1.);
    TGraph(const TGraph &gr);
    TGraph& operator=(const TGraph&);
    TGraph(const TVectorF &vx, const TVectorF &vy);
@@ -172,6 +173,7 @@ public:
    virtual Int_t         RemovePoint(); // *MENU*
    virtual Int_t         RemovePoint(Int_t ipoint);
    void          SavePrimitive(std::ostream &out, Option_t *option = "") override;
+   void          SaveAs(const char *filename, Option_t *option = "") const override;
    virtual void          Scale(Double_t c1=1., Option_t *option="y"); // *MENU*
    virtual void          SetEditable(Bool_t editable=kTRUE); // *TOGGLE* *GETTER=GetEditable
    virtual void          SetHighlight(Bool_t set = kTRUE); // *TOGGLE* *GETTER=IsHighlight

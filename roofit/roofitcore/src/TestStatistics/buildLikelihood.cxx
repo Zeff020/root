@@ -62,7 +62,7 @@ RooArgSet getConstraintsSet(RooAbsPdf *pdf, RooAbsData *data, ConstrainedParamet
 {
    // BEGIN CONSTRAINT COLLECTION; copied from RooAbsPdf::createNLL
 
-   Bool_t doStripDisconnected = kFALSE;
+   bool doStripDisconnected = false;
    // If no explicit list of parameters to be constrained is specified apply default algorithm
    // All terms of RooProdPdfs that do not contain observables and share parameters with one or more
    // terms that do contain observables are added as constraints.
@@ -71,9 +71,9 @@ RooArgSet getConstraintsSet(RooAbsPdf *pdf, RooAbsData *data, ConstrainedParamet
    std::size_t N_default_constraints = 0;
 #endif
    if (constrained_parameters.set.getSize() == 0) {
-      std::unique_ptr<RooArgSet> default_constraints{pdf->getParameters(*data, kFALSE)};
+      std::unique_ptr<RooArgSet> default_constraints{pdf->getParameters(*data, false)};
       constrained_parameters.set.add(*default_constraints);
-      doStripDisconnected = kTRUE;
+      doStripDisconnected = true;
 #ifndef NDEBUG
       did_default_constraint_algo = true;
       N_default_constraints = default_constraints->getSize();
@@ -94,8 +94,8 @@ RooArgSet getConstraintsSet(RooAbsPdf *pdf, RooAbsData *data, ConstrainedParamet
       }
       std::unique_ptr<RooArgSet> allVars{pdf->getVariables()};
       global_observables.set.add(
-         *dynamic_cast<RooArgSet *>(allVars->selectByAttrib(global_observables_tag.c_str(), kTRUE)));
-      oocoutI((TObject *)nullptr, Minimization)
+         *dynamic_cast<RooArgSet *>(allVars->selectByAttrib(global_observables_tag.c_str(), true)));
+      oocoutI(nullptr, Minimization)
          << "User-defined specification of global observables definition with tag named '" << global_observables_tag
          << "'" << std::endl;
    } else if (global_observables.set.getSize() == 0) {
@@ -103,11 +103,11 @@ RooArgSet getConstraintsSet(RooAbsPdf *pdf, RooAbsData *data, ConstrainedParamet
       // node
       const char *defGlobObsTag = pdf->getStringAttribute("DefaultGlobalObservablesTag");
       if (defGlobObsTag) {
-         oocoutI((TObject *)nullptr, Minimization)
+         oocoutI(nullptr, Minimization)
             << "p.d.f. provides built-in specification of global observables definition with tag named '"
             << defGlobObsTag << "'" << std::endl;
          std::unique_ptr<RooArgSet> allVars{pdf->getVariables()};
-         global_observables.set.add(*dynamic_cast<RooArgSet *>(allVars->selectByAttrib(defGlobObsTag, kTRUE)));
+         global_observables.set.add(*dynamic_cast<RooArgSet *>(allVars->selectByAttrib(defGlobObsTag, true)));
       }
    }
 
@@ -156,10 +156,10 @@ buildSubsidiaryL(RooAbsPdf *pdf, RooAbsData *data, ConstrainedParameters constra
    // Include constraints, if any, in likelihood
    if (allConstraints.getSize() > 0) {
 
-      oocoutI((TObject *)nullptr, Minimization)
+      oocoutI(nullptr, Minimization)
          << " Including the following contraint terms in minimization: " << allConstraints << std::endl;
       if (global_observables.set.getSize() > 0) {
-         oocoutI((TObject *)nullptr, Minimization)
+         oocoutI(nullptr, Minimization)
             << "The following global observables have been defined: " << global_observables.set << std::endl;
       }
       std::string name("likelihood for pdf ");
@@ -269,7 +269,7 @@ getSimultaneousComponents(RooAbsPdf *pdf, RooAbsData *data, RooAbsL::Extended ex
             << dset->numEntries() << " dataset entries)" << std::endl;
 
          RooAbsPdf *binnedPdf = getBinnedPdf(component_pdf);
-         Bool_t binnedL = (binnedPdf != nullptr);
+         bool binnedL = (binnedPdf != nullptr);
          if (binnedPdf == nullptr && component_pdf->IsA()->InheritsFrom(RooProdPdf::Class())) {
             // Default case: top-level pdf is a product of RRSP and other pdfs
             for (const auto component : ((RooProdPdf *)component_pdf)->pdfList()) {
@@ -308,7 +308,7 @@ getSimultaneousComponents(RooAbsPdf *pdf, RooAbsData *data, RooAbsL::Extended ex
          }
       }
    }
-   oocoutI((TObject *)nullptr, Fitting) << "getSimultaneousComponents: created " << n << " slave calculators."
+   oocoutI(nullptr, Fitting) << "getSimultaneousComponents: created " << n << " slave calculators."
                                         << std::endl;
 
    return components;

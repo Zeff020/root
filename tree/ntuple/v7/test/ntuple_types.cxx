@@ -170,7 +170,7 @@ TEST(RNTuple, TClass)
 
 TEST(RNTuple, TClassMultipleInheritance)
 {
-   FileRaii fileGuard("test_ntuple_tclass.ntuple");
+   FileRaii fileGuard("test_ntuple_tclass_multinheritance.ntuple");
    {
       auto model = RNTupleModel::Create();
       auto fieldKlass = model->MakeField<DerivedC>("klass");
@@ -213,12 +213,39 @@ TEST(RNTuple, TClassMultipleInheritance)
    }
 }
 
+TEST(RNTuple, TClassEBO)
+{
+   // Empty base optimization is required for standard layout types (since C++11)
+   EXPECT_EQ(sizeof(TestEBO), sizeof(std::uint64_t));
+   auto field = RField<TestEBO>("klass");
+   EXPECT_EQ(sizeof(TestEBO), field.GetValueSize());
+
+   FileRaii fileGuard("test_ntuple_tclassebo.ntuple");
+   {
+      auto model = RNTupleModel::Create();
+      auto fieldKlass = model->MakeField<TestEBO>("klass");
+      RNTupleWriteOptions options;
+      auto ntuple = RNTupleWriter::Recreate(std::move(model), "f", fileGuard.GetPath(), options);
+      (*fieldKlass).u64 = 42;
+      ntuple->Fill();
+   }
+
+   {
+      auto ntuple = RNTupleReader::Open("f", fileGuard.GetPath());
+      EXPECT_EQ(1U, ntuple->GetNEntries());
+      auto idEmptyBase = ntuple->GetDescriptor()->FindFieldId("klass.:_0");
+      EXPECT_NE(idEmptyBase, ROOT::Experimental::kInvalidDescriptorId);
+      auto viewKlass = ntuple->GetView<TestEBO>("klass");
+      EXPECT_EQ(42, viewKlass(0).u64);
+   }
+}
+
 TEST(RNTuple, TClassTemplatedBase)
 {
    // For non-cxxmodules builds, cling needs to parse the header for the `SG::sgkey_t` type to be known
    gInterpreter->ProcessLine("#include \"CustomStruct.hxx\"");
 
-   FileRaii fileGuard("test_ntuple_tclass.ntuple");
+   FileRaii fileGuard("test_ntuple_tclass_templatebase.ntuple");
    {
       auto model = RNTupleModel::Create();
       auto fieldKlass = model->MakeField<PackedContainer<int>>("klass");
@@ -251,4 +278,22 @@ TEST(RNTuple, TClassTemplatedBase)
       EXPECT_EQ((std::vector<int>{static_cast<int>(i + 2),
                                   static_cast<int>(i + 3)}), viewKlass(i));
    }
+}
+
+TEST(RNTuple, Enums)
+{
+   FileRaii fileGuard("test_ntuple_enums.ntuple");
+
+   {
+      auto model = RNTupleModel::Create();
+      auto fieldKlass = model->MakeField<StructWithEnums>("klass");
+      auto ntuple = RNTupleWriter::Recreate(std::move(model), "f", fileGuard.GetPath());
+      ntuple->Fill();
+   }
+
+   auto ntuple = RNTupleReader::Open("f", fileGuard.GetPath());
+   ASSERT_EQ(1U, ntuple->GetNEntries());
+   auto viewKlass = ntuple->GetView<StructWithEnums>("klass");
+   EXPECT_EQ(42, viewKlass(0).a);
+   EXPECT_EQ(137, viewKlass(0).b);
 }

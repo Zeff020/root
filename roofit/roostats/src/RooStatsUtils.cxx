@@ -35,9 +35,7 @@ namespace {
      template<class listT, class stringT> void getParameterNames(const listT* l,std::vector<stringT>& names){
        // extract the parameter names from a list
        if(!l) return;
-       RooAbsArg* obj;
-       RooFIter itr(l->fwdIterator());
-       while((obj = itr.next())){
+       for (auto const *obj : *l) {
          names.push_back(obj->GetName());
        }
      }
@@ -58,7 +56,7 @@ namespace RooStats {
       return theConfig;
    }
 
-   Double_t AsimovSignificance(Double_t s, Double_t b, Double_t sigma_b ) {
+   double AsimovSignificance(double s, double b, double sigma_b ) {
    // Asimov significance
    // formula [10] and [20] from  https://www.pp.rhul.ac.uk/~cowan/stat/notes/medsigNote.pdf
       // case we have a sigma_b
@@ -127,7 +125,7 @@ namespace RooStats {
       // utility function to factorize constraint terms from a pdf
       // (from G. Petrucciani)
       if (!model.GetObservables() ) {
-         oocoutE((TObject*)0,InputArguments) << "RooStatsUtils::FactorizePdf - invalid input model: missing observables" << endl;
+         oocoutE(nullptr,InputArguments) << "RooStatsUtils::FactorizePdf - invalid input model: missing observables" << endl;
          return;
       }
       return FactorizePdf(*model.GetObservables(), pdf, obsTerms, constraints);
@@ -139,7 +137,7 @@ namespace RooStats {
       RooArgList obsTerms, constraints;
       FactorizePdf(observables, pdf, obsTerms, constraints);
       if(constraints.getSize() == 0) {
-         oocoutW((TObject *)0, Eval) << "RooStatsUtils::MakeNuisancePdf - no constraints found on nuisance parameters in the input model" << endl;
+         oocoutW(nullptr, Eval) << "RooStatsUtils::MakeNuisancePdf - no constraints found on nuisance parameters in the input model" << endl;
          return 0;
       }
       return new RooProdPdf(name,"", constraints);
@@ -148,7 +146,7 @@ namespace RooStats {
    RooAbsPdf * MakeNuisancePdf(const RooStats::ModelConfig &model, const char *name) {
       // make a nuisance pdf by factorizing out all constraint terms in a common pdf
       if (!model.GetPdf() || !model.GetObservables() ) {
-         oocoutE((TObject*)0, InputArguments) << "RooStatsUtils::MakeNuisancePdf - invalid input model: missing pdf and/or observables" << endl;
+         oocoutE(nullptr, InputArguments) << "RooStatsUtils::MakeNuisancePdf - invalid input model: missing pdf and/or observables" << endl;
          return 0;
       }
       return MakeNuisancePdf(*model.GetPdf(), *model.GetObservables(), name);
@@ -218,8 +216,8 @@ namespace RooStats {
       // make a clone pdf without all constraint terms in a common pdf
       RooAbsPdf * unconstrainedPdf = StripConstraints(pdf, observables);
       if(!unconstrainedPdf) {
-         oocoutE((TObject *)NULL, InputArguments) << "RooStats::MakeUnconstrainedPdf - invalid observable list passed (observables not found in original pdf) or invalid pdf passed (without observables)" << endl;
-         return NULL;
+         oocoutE(nullptr, InputArguments) << "RooStats::MakeUnconstrainedPdf - invalid observable list passed (observables not found in original pdf) or invalid pdf passed (without observables)" << endl;
+         return nullptr;
       }
       if(name != NULL) unconstrainedPdf->SetName(name);
       return unconstrainedPdf;
@@ -228,8 +226,8 @@ namespace RooStats {
    RooAbsPdf * MakeUnconstrainedPdf(const RooStats::ModelConfig &model, const char *name) {
       // make a clone pdf without all constraint terms in a common pdf
       if(!model.GetPdf() || !model.GetObservables()) {
-         oocoutE((TObject *)NULL, InputArguments) << "RooStatsUtils::MakeUnconstrainedPdf - invalid input model: missing pdf and/or observables" << endl;
-         return NULL;
+         oocoutE(nullptr, InputArguments) << "RooStatsUtils::MakeUnconstrainedPdf - invalid input model: missing pdf and/or observables" << endl;
+         return nullptr;
       }
       return MakeUnconstrainedPdf(*model.GetPdf(), *model.GetObservables(), name);
    }
@@ -237,7 +235,7 @@ namespace RooStats {
    // Helper class for GetAsTTree
    class BranchStore {
       public:
-         std::map<TString, Double_t> fVarVals;
+         std::map<TString, double> fVarVals;
          double fInval;
          TTree *fTree;
 
@@ -249,7 +247,7 @@ namespace RooStats {
 
          ~BranchStore() {
             if (fTree) {
-               for(std::map<TString, Double_t>::iterator it = fVarVals.begin();it!=fVarVals.end();++it) {
+               for(std::map<TString, double>::iterator it = fVarVals.begin();it!=fVarVals.end();++it) {
                   TBranch *br = fTree->GetBranch( it->first );
                   if (br) br->ResetAddress();
                }
@@ -258,13 +256,13 @@ namespace RooStats {
 
          void AssignToTTree(TTree &myTree) {
             fTree = &myTree;
-            for(std::map<TString, Double_t>::iterator it = fVarVals.begin();it!=fVarVals.end();++it) {
+            for(std::map<TString, double>::iterator it = fVarVals.begin();it!=fVarVals.end();++it) {
                const TString& name = it->first;
                myTree.Branch( name, &fVarVals[name], TString::Format("%s/D", name.Data()));
             }
          }
          void ResetValues() {
-            for(std::map<TString, Double_t>::iterator it = fVarVals.begin();it!=fVarVals.end();++it) {
+            for(std::map<TString, double>::iterator it = fVarVals.begin();it!=fVarVals.end();++it) {
                const TString& name = it->first;
                fVarVals[name] = fInval;
             }
@@ -276,11 +274,7 @@ namespace RooStats {
          return new BranchStore;
       }
       vector <TString> V;
-      const RooArgSet* aset = data.get(0);
-      RooAbsArg *arg(0);
-      TIterator *it = aset->createIterator();
-      for(;(arg = dynamic_cast<RooAbsArg*>(it->Next()));) {
-         RooRealVar *rvar = dynamic_cast<RooRealVar*>(arg);
+      for (auto *rvar : dynamic_range_cast<RooRealVar *>(* data.get(0))) {
          if (rvar == NULL)
             continue;
          V.push_back(rvar->GetName());
@@ -292,7 +286,6 @@ namespace RooStats {
             V.push_back(TString::Format("%s_err", rvar->GetName()));
          }
       }
-      delete it;
       return new BranchStore(V);
    }
 
@@ -301,12 +294,8 @@ namespace RooStats {
       bs->AssignToTTree(myTree);
 
       for(int entry = 0;entry<data.numEntries();entry++) {
-         bs->ResetValues();
-         const RooArgSet* aset = data.get(entry);
-         RooAbsArg *arg(0);
-         RooLinkedListIter it = aset->iterator();
-         for(;(arg = dynamic_cast<RooAbsArg*>(it.Next()));) {
-            RooRealVar *rvar = dynamic_cast<RooRealVar*>(arg);
+         bs->ResetValues(); 
+         for (auto const *rvar : dynamic_range_cast<RooRealVar *>(*data.get(entry))) {
             if (rvar == NULL)
                continue;
             bs->fVarVals[rvar->GetName()] = rvar->getValV();
@@ -337,7 +326,7 @@ namespace RooStats {
       os << "( ";
       for (int i = 0; i< l.getSize(); ++i) {
          if (first) {
-            first=kFALSE ;
+            first=false ;
          } else {
             os << ", " ;
          }
@@ -395,10 +384,8 @@ namespace RooStats {
 
       // Copy snapshots
       if (copySnapshots) {
-        RooFIter itr(oldWS->getSnapshots().fwdIterator());
-        RooArgSet *snap;
-        while ((snap = (RooArgSet *)itr.next())) {
-          RooArgSet *snapClone = (RooArgSet *)snap->snapshot();
+        for (auto *snap : oldWS->getSnapshots()) {
+          RooArgSet *snapClone = static_cast<RooArgSet *>(snap)->snapshot();
           snapClone->setName(snap->GetName());
           newWS->getSnapshots().Add(snapClone);
         }

@@ -31,20 +31,20 @@ public:
   RooAcceptReject() : _nextCatVar(0), _nextRealVar(0) {
     // coverity[UNINIT_CTOR]
   } ;
-  RooAcceptReject(const RooAbsReal &func, const RooArgSet &genVars, const RooNumGenConfig& config, Bool_t verbose=kFALSE, const RooAbsReal* maxFuncVal=0);
+  RooAcceptReject(const RooAbsReal &func, const RooArgSet &genVars, const RooNumGenConfig& config, bool verbose=false, const RooAbsReal* maxFuncVal=0);
   RooAbsNumGenerator* clone(const RooAbsReal& func, const RooArgSet& genVars, const RooArgSet& /*condVars*/,
-             const RooNumGenConfig& config, Bool_t verbose=kFALSE, const RooAbsReal* maxFuncVal=0) const override {
+             const RooNumGenConfig& config, bool verbose=false, const RooAbsReal* maxFuncVal=0) const override {
     return new RooAcceptReject(func,genVars,config,verbose,maxFuncVal) ;
   }
   ~RooAcceptReject() override;
 
-  const RooArgSet *generateEvent(UInt_t remaining, Double_t& resampleRatio) override;
-  Double_t getFuncMax() override ;
+  const RooArgSet *generateEvent(UInt_t remaining, double& resampleRatio) override;
+  double getFuncMax() override ;
 
 
   // Advertisement of capabilities
-  Bool_t canSampleConditional() const override { return kTRUE ; }
-  Bool_t canSampleCategories() const override { return kTRUE ; }
+  bool canSampleConditional() const override { return true ; }
+  bool canSampleCategories() const override { return true ; }
 
 
 protected:
@@ -55,7 +55,7 @@ protected:
   void addEventToCache();
   const RooArgSet *nextAcceptedEvent();
 
-  Double_t _maxFuncVal, _funcSum;       ///< Maximum function value found, and sum of all samples made
+  double _maxFuncVal, _funcSum;       ///< Maximum function value found, and sum of all samples made
   UInt_t _realSampleDim,_catSampleMult; ///< Number of real and discrete dimensions to be sampled
   UInt_t _minTrials;                    ///< Minimum number of max.finding trials, total number of samples
   UInt_t _totalEvents;                  ///< Total number of function samples

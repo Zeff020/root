@@ -119,14 +119,14 @@ void RooProduct::addTerm(RooAbsArg* term) {
 /// Force internal handling of integration of given observable if any
 /// of the product terms depend on it.
 
-Bool_t RooProduct::forceAnalyticalInt(const RooAbsArg& dep) const
+bool RooProduct::forceAnalyticalInt(const RooAbsArg& dep) const
 {
   // Force internal handling of integration of given observable if any
   // of the product terms depend on it.
 
   RooFIter compRIter = _compRSet.fwdIterator() ;
   RooAbsReal* rcomp ;
-  Bool_t depends(kFALSE);
+  bool depends(false);
   while((rcomp=(RooAbsReal*)compRIter.next())&&!depends) {
         depends = rcomp->dependsOn(dep);
   }
@@ -173,7 +173,7 @@ RooProduct::ProdMap* RooProduct::groupProductTerms(const RooArgSet& allVars) con
   }
 
   // Merge groups with overlapping dependents
-  Bool_t overlap;
+  bool overlap;
   do {
     std::pair<ProdMap::iterator,ProdMap::iterator> i = findOverlap2nd(map->begin(),map->end());
     overlap = (i.first!=i.second);
@@ -309,7 +309,7 @@ Int_t RooProduct::getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& analVar
 ////////////////////////////////////////////////////////////////////////////////
 /// Calculate integral internally from appropriate partial integral cache
 
-Double_t RooProduct::analyticalIntegral(Int_t code, const char* rangeName) const
+double RooProduct::analyticalIntegral(Int_t code, const char* rangeName) const
 {
   // note: rangeName implicit encoded in code: see _cacheMgr.setObj in getPartIntList...
   CacheElem *cache = (CacheElem*) _cacheMgr.getObjByIndex(code-1);
@@ -330,9 +330,9 @@ Double_t RooProduct::analyticalIntegral(Int_t code, const char* rangeName) const
 ////////////////////////////////////////////////////////////////////////////////
 /// Calculate and return product of partial terms in partIntList
 
-Double_t RooProduct::calculate(const RooArgList& partIntList) const
+double RooProduct::calculate(const RooArgList& partIntList) const
 {
-  Double_t val=1;
+  double val=1;
   for (const auto arg : partIntList) {
     const auto term = static_cast<const RooAbsReal*>(arg);
     double x = term->getVal();
@@ -351,9 +351,9 @@ const char* RooProduct::makeFPName(const char *pfx,const RooArgSet& terms) const
   pname = pfx;
   RooFIter i = terms.fwdIterator();
   RooAbsArg *arg;
-  Bool_t first(kTRUE);
+  bool first(true);
   while((arg=(RooAbsArg*)i.next())) {
-    if (first) { first=kFALSE;}
+    if (first) { first=false;}
     else pname.Append("_X_");
     pname.Append(arg->GetName());
   }
@@ -365,9 +365,9 @@ const char* RooProduct::makeFPName(const char *pfx,const RooArgSet& terms) const
 ////////////////////////////////////////////////////////////////////////////////
 /// Evaluate product of input functions
 
-Double_t RooProduct::evaluate() const
+double RooProduct::evaluate() const
 {
-  Double_t prod(1) ;
+  double prod(1) ;
 
   const RooArgSet* nset = _compRSet.nset() ;
   for (const auto item : _compRSet) {
@@ -386,7 +386,7 @@ Double_t RooProduct::evaluate() const
 }
 
 
-void RooProduct::computeBatch(cudaStream_t* /*stream*/, double* output, size_t nEvents, RooBatchCompute::DataMap& dataMap) const
+void RooProduct::computeBatch(cudaStream_t* /*stream*/, double* output, size_t nEvents, RooFit::Detail::DataMap const& dataMap) const
 {
   for (unsigned int i = 0; i < nEvents; ++i) {
     output[i] = 1.;
@@ -394,7 +394,7 @@ void RooProduct::computeBatch(cudaStream_t* /*stream*/, double* output, size_t n
 
   for (const auto item : _compRSet) {
     auto rcomp = static_cast<const RooAbsReal*>(item);
-    auto componentValues = dataMap[rcomp];
+    auto componentValues = dataMap.at(rcomp);
 
     for (unsigned int i = 0; i < nEvents; ++i) {
       output[i] *= componentValues.size() == 1 ? componentValues[0] : componentValues[i];
@@ -415,12 +415,12 @@ void RooProduct::computeBatch(cudaStream_t* /*stream*/, double* output, size_t n
 ////////////////////////////////////////////////////////////////////////////////
 /// Forward the plot sampling hint from the p.d.f. that defines the observable obs
 
-std::list<Double_t>* RooProduct::binBoundaries(RooAbsRealLValue& obs, Double_t xlo, Double_t xhi) const
+std::list<double>* RooProduct::binBoundaries(RooAbsRealLValue& obs, double xlo, double xhi) const
 {
   for (const auto item : _compRSet) {
     auto func = static_cast<const RooAbsReal*>(item);
 
-    list<Double_t>* binb = func->binBoundaries(obs,xlo,xhi) ;
+    list<double>* binb = func->binBoundaries(obs,xlo,xhi) ;
     if (binb) {
       return binb ;
     }
@@ -431,7 +431,7 @@ std::list<Double_t>* RooProduct::binBoundaries(RooAbsRealLValue& obs, Double_t x
 
 
 //_____________________________________________________________________________B
-Bool_t RooProduct::isBinnedDistribution(const RooArgSet& obs) const
+bool RooProduct::isBinnedDistribution(const RooArgSet& obs) const
 {
   // If all components that depend on obs are binned that so is the product
 
@@ -439,11 +439,11 @@ Bool_t RooProduct::isBinnedDistribution(const RooArgSet& obs) const
     auto func = static_cast<const RooAbsReal*>(item);
 
     if (func->dependsOn(obs) && !func->isBinnedDistribution(obs)) {
-      return kFALSE ;
+      return false ;
     }
   }
 
-  return kTRUE  ;
+  return true  ;
 }
 
 
@@ -451,12 +451,12 @@ Bool_t RooProduct::isBinnedDistribution(const RooArgSet& obs) const
 ////////////////////////////////////////////////////////////////////////////////
 /// Forward the plot sampling hint from the p.d.f. that defines the observable obs
 
-std::list<Double_t>* RooProduct::plotSamplingHint(RooAbsRealLValue& obs, Double_t xlo, Double_t xhi) const
+std::list<double>* RooProduct::plotSamplingHint(RooAbsRealLValue& obs, double xlo, double xhi) const
 {
   for (const auto item : _compRSet) {
     auto func = static_cast<const RooAbsReal*>(item);
 
-    list<Double_t>* hint = func->plotSamplingHint(obs,xlo,xhi) ;
+    list<double>* hint = func->plotSamplingHint(obs,xlo,xhi) ;
     if (hint) {
       return hint ;
     }
@@ -513,17 +513,17 @@ void RooProduct::setCacheAndTrackHints(RooArgSet& trackNodes)
 
 void RooProduct::printMetaArgs(ostream& os) const
 {
-  Bool_t first(kTRUE) ;
+  bool first(true) ;
 
   for (const auto rcomp : _compRSet) {
-    if (!first) {  os << " * " ; } else {  first = kFALSE ; }
+    if (!first) {  os << " * " ; } else {  first = false ; }
     os << rcomp->GetName() ;
   }
 
   for (const auto item : _compCSet) {
     auto ccomp = static_cast<const RooAbsCategory*>(item);
 
-    if (!first) {  os << " * " ; } else {  first = kFALSE ; }
+    if (!first) {  os << " * " ; } else {  first = false ; }
     os << ccomp->GetName() ;
   }
 
@@ -551,10 +551,10 @@ std::pair<RPPMIter,RPPMIter> findOverlap2nd(RPPMIter i, RPPMIter end)
 void dump_map(ostream& os, RPPMIter i, RPPMIter end)
 {
   // Utility dump function for debugging
-  Bool_t first(kTRUE);
+  bool first(true);
   os << " [ " ;
   for(; i!=end;++i) {
-    if (first) { first=kFALSE; }
+    if (first) { first=false; }
     else { os << " , " ; }
     os << *(i->first) << " -> " << *(i->second) ;
   }

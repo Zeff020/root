@@ -137,7 +137,7 @@ void RooStats::HistFactory::Sample::writeToFile( std::string OutputFileName, std
 }
 
 
-void RooStats::HistFactory::Sample::SetValue( Double_t val ) {
+void RooStats::HistFactory::Sample::SetValue( double val ) {
 
   // For use in a number counting measurement
   // Create a 1-bin histogram,
@@ -201,7 +201,7 @@ void RooStats::HistFactory::Sample::Print( std::ostream& stream ) const {
 
 }
 
-void RooStats::HistFactory::Sample::PrintXML( std::ofstream& xml ) {
+void RooStats::HistFactory::Sample::PrintXML( std::ofstream& xml ) const {
 
 
   // Create the sample tag
@@ -335,7 +335,7 @@ void RooStats::HistFactory::Sample::ActivateStatError( std::string StatHistoName
 }
 
 
-void RooStats::HistFactory::Sample::AddOverallSys( std::string SysName, Double_t SysLow, Double_t SysHigh ) {
+void RooStats::HistFactory::Sample::AddOverallSys( std::string SysName, double SysLow, double SysHigh ) {
 
   RooStats::HistFactory::OverallSys sys;
   sys.SetName( SysName );
@@ -350,7 +350,7 @@ void RooStats::HistFactory::Sample::AddOverallSys( const OverallSys& Sys ) {
   fOverallSysList.push_back(Sys);
 }
 
-void RooStats::HistFactory::Sample::AddNormFactor( std::string SysName, Double_t SysVal, Double_t SysLow, Double_t SysHigh, bool SysConst ) {
+void RooStats::HistFactory::Sample::AddNormFactor( std::string SysName, double SysVal, double SysLow, double SysHigh, bool SysConst ) {
 
   RooStats::HistFactory::NormFactor norm;
 

@@ -35,19 +35,19 @@ namespace RooStats {
    public:
     /// Constructors for SamplingDistribution
     SamplingDistPlot(Int_t nbins = 100);
-    SamplingDistPlot(Int_t nbins, Double_t min, Double_t max);
+    SamplingDistPlot(Int_t nbins, double min, double max);
 
     /// Destructor of SamplingDistribution
     ~SamplingDistPlot() override;
 
     /// adds the sampling distribution and returns the scale factor
-    Double_t AddSamplingDistribution(const SamplingDistribution *samplingDist, Option_t *drawOptions="NORMALIZE HIST");
+    double AddSamplingDistribution(const SamplingDistribution *samplingDist, Option_t *drawOptions="NORMALIZE HIST");
     /// Like AddSamplingDistribution, but also sets a shaded area in the
     /// minShaded and maxShaded boundaries.
-    Double_t AddSamplingDistributionShaded(const SamplingDistribution *samplingDist, Double_t minShaded, Double_t maxShaded, Option_t *drawOptions="NORMALIZE HIST");
+    double AddSamplingDistributionShaded(const SamplingDistribution *samplingDist, double minShaded, double maxShaded, Option_t *drawOptions="NORMALIZE HIST");
 
     /// add a line
-    void AddLine(Double_t x1, Double_t y1, Double_t x2, Double_t y2, const char* title = NULL);
+    void AddLine(double x1, double y1, double x2, double y2, const char* title = NULL);
     /// add a TH1
     void AddTH1(TH1* h, Option_t *drawOptions="");
     /// add a TF1
@@ -57,7 +57,7 @@ namespace RooStats {
 
     void Draw(Option_t *options=0) override;
 
-    /// Applies a predefined style if fApplyStyle is kTRUE (default).
+    /// Applies a predefined style if fApplyStyle is true (default).
     void ApplyDefaultStyle(void);
 
     void SetLineColor(Color_t color, const SamplingDistribution *samplDist = 0);
@@ -74,7 +74,7 @@ namespace RooStats {
 
     /// If you do not want SamplingDistPlot to interfere with your style settings, call this
     /// function with "false" before Draw().
-    void SetApplyStyle(Bool_t s) { fApplyStyle = s; }
+    void SetApplyStyle(bool s) { fApplyStyle = s; }
 
     /// Returns the TH1F associated with the give SamplingDistribution.
     /// Intended use: Access to member functions of TH1F like GetMean(),
@@ -88,9 +88,9 @@ namespace RooStats {
     RooPlot * GetPlot() { return fRooPlot; }
 
     /// changes plot to log scale on x axis
-    void SetLogXaxis(Bool_t lx) { fLogXaxis = lx; }
+    void SetLogXaxis(bool lx) { fLogXaxis = lx; }
     /// changes plot to log scale on y axis
-    void SetLogYaxis(Bool_t ly) { fLogYaxis = ly; }
+    void SetLogYaxis(bool ly) { fLogYaxis = ly; }
 
     /// change x range
     void SetXRange( double mi, double ma ) { fXMin = mi; fXMax = ma; }
@@ -101,10 +101,10 @@ namespace RooStats {
     void DumpToFile(const char* RootFileName, Option_t *option="", const char *ftitle="", Int_t compress = ROOT::RCompressionSetting::EDefaults::kUseCompiledDefault);
 
   private:
-    std::vector<Double_t> fSamplingDistr;
-    std::vector<Double_t> fSampleWeights;
+    std::vector<double> fSamplingDistr;
+    std::vector<double> fSampleWeights;
 
-    Bool_t fIsWeighted;
+    bool fIsWeighted;
 
     Int_t fBins;
     Int_t fMarkerType;
@@ -121,19 +121,19 @@ namespace RooStats {
     TList fOtherItems;  ///< other objects to be drawn like TLine etc.
     TIterator* fIterator;
     RooPlot* fRooPlot;
-    Bool_t fLogXaxis;
-    Bool_t fLogYaxis;
+    bool fLogXaxis;
+    bool fLogYaxis;
 
     double fXMin, fXMax, fYMin, fYMax;
 
-    Bool_t fApplyStyle;
+    bool fApplyStyle;
     Style_t fFillStyle;
 
     void SetSampleWeights(const SamplingDistribution *samplingDist);
 
     void addObject(TObject *obj, Option_t *drawOptions=0); // for TH1Fs only
     void addOtherObject(TObject *obj, Option_t *drawOptions=0);
-    void GetAbsoluteInterval(Double_t &theMin, Double_t &theMax, Double_t &theYMax) const;
+    void GetAbsoluteInterval(double &theMin, double &theMax, double &theYMax) const;
 
     ClassDefOverride(SamplingDistPlot,2)  /// Class containing the results of the HybridCalculator
   };

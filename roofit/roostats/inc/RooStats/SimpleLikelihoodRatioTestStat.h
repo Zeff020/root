@@ -13,8 +13,7 @@
 
 #include "Rtypes.h"
 
-#include "RooNLLVar.h"
-
+#include "RooAbsPdf.h"
 #include "RooRealVar.h"
 
 #include "RooStats/TestStatistic.h"
@@ -34,7 +33,7 @@ namespace RooStats {
          fDetailedOutput = NULL;
          fNullParameters = NULL;
          fAltParameters = NULL;
-         fReuseNll=kFALSE ;
+         fReuseNll=false ;
          fNllNull=NULL ;
          fNllAlt=NULL ;
       }
@@ -60,7 +59,7 @@ namespace RooStats {
          fDetailedOutputEnabled = false;
          fDetailedOutput = NULL;
 
-         fReuseNll=kFALSE ;
+         fReuseNll=false ;
          fNllNull=NULL ;
          fNllAlt=NULL ;
       }
@@ -84,7 +83,7 @@ namespace RooStats {
          fDetailedOutputEnabled = false;
          fDetailedOutput = NULL;
 
-         fReuseNll=kFALSE ;
+         fReuseNll=false ;
          fNllNull=NULL ;
          fNllAlt=NULL ;
       }
@@ -97,9 +96,9 @@ namespace RooStats {
          if (fDetailedOutput) delete fDetailedOutput;
       }
 
-      static void SetAlwaysReuseNLL(Bool_t flag);
+      static void SetAlwaysReuseNLL(bool flag);
 
-      void SetReuseNLL(Bool_t flag) { fReuseNll = flag ; }
+      void SetReuseNLL(bool flag) { fReuseNll = flag ; }
 
       void SetNullParameters(const RooArgSet& nullParameters) {
          if (fNullParameters) delete fNullParameters;
@@ -117,17 +116,16 @@ namespace RooStats {
       bool ParamsAreEqual() {
          if (!fNullParameters->equals(*fAltParameters)) return false;
 
-         RooAbsReal* null;
-         RooAbsReal* alt;
-
-         TIterator* nullIt = fNullParameters->createIterator();
-         TIterator* altIt = fAltParameters->createIterator();
          bool ret = true;
-         while ((null = (RooAbsReal*) nullIt->Next()) && (alt = (RooAbsReal*) altIt->Next())) {
-            if (null->getVal() != alt->getVal()) ret = false;
+
+         for (auto nullIt = fNullParameters->begin(), altIt = fAltParameters->begin();
+              nullIt != fNullParameters->end() && altIt != fAltParameters->end(); ++nullIt, ++altIt) {
+            RooAbsReal *null = static_cast<RooAbsReal *>(*nullIt);
+            RooAbsReal *alt = static_cast<RooAbsReal *>(*altIt);
+            if (null->getVal() != alt->getVal())
+               ret = false;
          }
-         delete nullIt;
-         delete altIt;
+
          return ret;
       }
 
@@ -140,7 +138,7 @@ namespace RooStats {
       /// so the constraint pdf's will be normalized correctly on the global observables when computing the NLL
       void SetGlobalObservables(const RooArgSet& set) override {fGlobalObs.removeAll(); fGlobalObs.add(set);}
 
-      Double_t Evaluate(RooAbsData& data, RooArgSet& nullPOI) override;
+      double Evaluate(RooAbsData& data, RooArgSet& nullPOI) override;
 
       virtual void EnableDetailedOutput( bool e=true ) { fDetailedOutputEnabled = e; fDetailedOutput = NULL; }
       const RooArgSet* GetDetailedOutput(void) const override { return fDetailedOutput; }
@@ -164,8 +162,8 @@ namespace RooStats {
 
       RooAbsReal* fNllNull ;  ///<! transient copy of the null NLL
       RooAbsReal* fNllAlt ;   ///<!  transient copy of the alt NLL
-      static Bool_t fgAlwaysReuseNll ;
-      Bool_t fReuseNll ;
+      static bool fgAlwaysReuseNll ;
+      bool fReuseNll ;
 
 
    protected:

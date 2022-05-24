@@ -27,8 +27,6 @@ storage of common components, such as the observables definition, the
 prototype data etc..
 **/
 
-#include "RooFit.h"
-
 #include "TClass.h"
 
 #include "RooAbsGenContext.h"
@@ -51,10 +49,10 @@ ClassImp(RooAbsGenContext);
 /// Constructor
 
 RooAbsGenContext::RooAbsGenContext(const RooAbsPdf& model, const RooArgSet &vars,
-               const RooDataSet *prototype, const RooArgSet* auxProto, Bool_t verbose) :
+               const RooDataSet *prototype, const RooArgSet* auxProto, bool verbose) :
   TNamed(model),
   _prototype(prototype),
-  _isValid(kTRUE),
+  _isValid(true),
   _verbose(verbose),
   _protoOrder(0),
   _genData(0)
@@ -62,7 +60,7 @@ RooAbsGenContext::RooAbsGenContext(const RooAbsPdf& model, const RooArgSet &vars
   // Check PDF dependents
   if (model.recursiveCheckObservables(&vars)) {
     coutE(Generation) << "RooAbsGenContext::ctor: Error in PDF dependents" << endl ;
-    _isValid = kFALSE ;
+    _isValid = false ;
     return ;
   }
 
@@ -131,7 +129,7 @@ void RooAbsGenContext::attach(const RooArgSet& /*params*/)
 RooDataSet* RooAbsGenContext::createDataSet(const char* name, const char* title, const RooArgSet& obs)
 {
   RooDataSet* ret = new RooDataSet(name, title, obs);
-  ret->setDirtyProp(kFALSE) ;
+  ret->setDirtyProp(false) ;
   return ret ;
 }
 
@@ -147,7 +145,7 @@ RooDataSet* RooAbsGenContext::createDataSet(const char* name, const char* title,
 /// method. A virtual initGenerator() method is also called just before the
 /// first call to generateEvent().
 
-RooDataSet *RooAbsGenContext::generate(Double_t nEvents, Bool_t skipInit, Bool_t extendedMode)
+RooDataSet *RooAbsGenContext::generate(double nEvents, bool skipInit, bool extendedMode)
 {
   if(!isValid()) {
     coutE(Generation) << ClassName() << "::" << GetName() << ": context is not valid" << endl;
@@ -190,14 +188,14 @@ RooDataSet *RooAbsGenContext::generate(Double_t nEvents, Bool_t skipInit, Bool_t
     const RooArgSet *vars= _prototype->get();
     TIterator *iterator= _protoVars.createIterator();
     const RooAbsArg *arg = 0;
-    Bool_t ok(kTRUE);
+    bool ok(true);
     while((arg= (const RooAbsArg*)iterator->Next())) {
       if(vars->contains(*arg)) continue;
       coutE(InputArguments) << ClassName() << "::" << GetName() << ":generate: prototype dataset is missing \""
              << arg->GetName() << "\"" << endl;
 
       // WVE disable this for the moment
-      // ok= kFALSE;
+      // ok= false;
     }
     delete iterator;
     // coverity[DEADCODE]
@@ -257,7 +255,7 @@ RooDataSet *RooAbsGenContext::generate(Double_t nEvents, Bool_t skipInit, Bool_t
 
   RooDataSet* output = _genData ;
   _genData = 0 ;
-  output->setDirtyProp(kTRUE) ;
+  output->setDirtyProp(true) ;
 
   return output;
 }
@@ -312,10 +310,10 @@ void RooAbsGenContext::printArgs(ostream& os) const
   os << "[ " ;
   TIterator* iter = _theEvent.createIterator() ;
   RooAbsArg* arg ;
-  Bool_t first(kTRUE) ;
+  bool first(true) ;
   while((arg=(RooAbsArg*)iter->Next())) {
     if (first) {
-      first=kFALSE ;
+      first=false ;
     } else {
       os << "," ;
     }
@@ -330,7 +328,7 @@ void RooAbsGenContext::printArgs(ostream& os) const
 ////////////////////////////////////////////////////////////////////////////////
 /// Interface for multi-line printing
 
-void RooAbsGenContext::printMultiline(ostream &/*os*/, Int_t /*contents*/, Bool_t /*verbose*/, TString /*indent*/) const
+void RooAbsGenContext::printMultiline(ostream &/*os*/, Int_t /*contents*/, bool /*verbose*/, TString /*indent*/) const
 {
 }
 
@@ -368,7 +366,7 @@ void RooAbsGenContext::setProtoDataOrder(Int_t* lut)
 ////////////////////////////////////////////////////////////////////////////////
 /// Rescale existing output buffer with given ratio
 
-void RooAbsGenContext::resampleData(Double_t& ratio)
+void RooAbsGenContext::resampleData(double& ratio)
 {
 
   Int_t nOrig = _genData->numEntries() ;

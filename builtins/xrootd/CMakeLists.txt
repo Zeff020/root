@@ -10,7 +10,8 @@ find_package(OpenSSL REQUIRED)
 
 set(XROOTD_VERSION "5.4.2")
 set(XROOTD_VERSIONNUM 500040002 CACHE INTERNAL "" FORCE)
-set(XROOTD_SRC_URI https://github.com/xrootd/xrootd/archive/v${XROOTD_VERSION}.tar.gz)
+set(lcgpackages http://lcgpackages.web.cern.ch/lcgpackages/tarFiles/sources)
+set(XROOTD_SRC_URI ${lcgpackages}/xrootd-${XROOTD_VERSION}.tar.gz)
 set(XROOTD_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/XROOTD-prefix)
 message(STATUS "Downloading and building XROOTD version ${XROOTD_VERSION}")
 
@@ -25,6 +26,10 @@ foreach(lib XrdUtils XrdCl)
   set(libname ${CMAKE_SHARED_LIBRARY_PREFIX}${lib}${CMAKE_SHARED_LIBRARY_SUFFIX})
   list(APPEND XROOTD_LIBRARIES ${XROOTD_PREFIX}/${XROOTD_LIBDIR}/${libname})
 endforeach()
+
+if(OPENSSL_VERSION VERSION_GREATER_EQUAL 3)
+   set(XROOTD_WITH_OPENSSL3 "-DWITH_OPENSSL3=TRUE")
+endif()
 
 ExternalProject_Add(
     XROOTD
@@ -42,6 +47,7 @@ ExternalProject_Add(
                -DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}
                -DENABLE_PYTHON=OFF
                -DENABLE_CEPH=OFF
+               ${XROOTD_WITH_OPENSSL3}
                -DCMAKE_INSTALL_RPATH:STRING=${XROOTD_PREFIX}/${XROOTD_LIBDIR}
     INSTALL_COMMAND ${CMAKE_COMMAND} --build . --target install
             COMMAND ${CMAKE_COMMAND} -E copy_directory <INSTALL_DIR>/include/xrootd <INSTALL_DIR>/include

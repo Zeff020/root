@@ -307,12 +307,10 @@ void ModelConfig::ImportDataInWS(RooAbsData & data) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Bool_t ModelConfig::SetHasOnlyParameters(const RooArgSet& set, const char* errorMsgPrefix) {
+bool ModelConfig::SetHasOnlyParameters(const RooArgSet& set, const char* errorMsgPrefix) {
 
-    RooArgSet nonparams ;
-    RooFIter iter = set.fwdIterator() ;
-    RooAbsArg* arg ;
-    while ((arg=iter.next())) {
+    RooArgSet nonparams ; 
+    for (auto const *arg : set) {
       if (!arg->isFundamental()) {
          nonparams.add(*arg) ;
       }

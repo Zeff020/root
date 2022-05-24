@@ -28,13 +28,12 @@ Object          | function
 ----------------|------------
    RooPlot      | regPlot()
    RooFitResult | regResult()
-   Double_t     | regValue()
+   double     | regValue()
    RooTable     | regTable()
    TH1/2/3      | regTH()
    RooWorkspace | regWS()
 **/
 
-#include "RooFit.h"
 #include "RooUnitTest.h"
 #include "TDirectory.h"
 #include "TClass.h"
@@ -54,8 +53,8 @@ TDirectory* RooUnitTest::gMemDir = nullptr;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-RooUnitTest::RooUnitTest(const char* name, TFile* refFile, Bool_t writeRef, Int_t verbose, std::string const& batchMode) : TNamed(name,name),
-                                  _refFile(refFile), _debug(kFALSE), _write(writeRef), _verb(verbose), _batchMode(batchMode)
+RooUnitTest::RooUnitTest(const char* name, TFile* refFile, bool writeRef, Int_t verbose, std::string const& batchMode) : TNamed(name,name),
+                                  _refFile(refFile), _debug(false), _write(writeRef), _verb(verbose), _batchMode(batchMode)
 {
 }
 
@@ -97,7 +96,7 @@ void RooUnitTest::regResult(RooFitResult* r, const char* refName)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void RooUnitTest::regValue(Double_t d, const char* refName)
+void RooUnitTest::regValue(double d, const char* refName)
 {
   if (_refFile) {
     string refNameStr(refName) ;
@@ -162,7 +161,7 @@ RooWorkspace* RooUnitTest::getWS(const char* refName)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Bool_t RooUnitTest::areTHidentical(TH1* htest, TH1* href)
+bool RooUnitTest::areTHidentical(TH1* htest, TH1* href)
 {
   if (htest->GetDimension() != href->GetDimension()) {
     return false ;
@@ -171,7 +170,7 @@ Bool_t RooUnitTest::areTHidentical(TH1* htest, TH1* href)
   // Use Kolmogorov distance as metric rather than probability
   // because we expect histograms to be identical rather
   // than drawn from the same parent distribution
-  Double_t kmax = htest->KolmogorovTest(href,"M") ;
+  double kmax = htest->KolmogorovTest(href,"M") ;
 
   if (kmax>htol()) {
 
@@ -208,9 +207,9 @@ Bool_t RooUnitTest::areTHidentical(TH1* htest, TH1* href)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Bool_t RooUnitTest::runCompTests()
+bool RooUnitTest::runCompTests()
 {
-  Bool_t ret = true ;
+  bool ret = true ;
 
   list<pair<RooPlot*, string> >::iterator iter = _regPlots.begin() ;
   while (iter!=_regPlots.end()) {
@@ -236,7 +235,7 @@ Bool_t RooUnitTest::runCompTests()
       }
 
       RooPlot* compPlot = _debug ? iter->first->emptyClone(Form("%s_comparison",iter->first->GetName())) : 0 ;
-      Bool_t anyFail=false ;
+      bool anyFail=false ;
 
       Stat_t nItems = iter->first->numItems() ;
       for (Stat_t i=0 ; i<nItems ; i++) {
@@ -374,7 +373,7 @@ Bool_t RooUnitTest::runCompTests()
     ++iter2 ;
   }
 
-  list<pair<Double_t, string> >::iterator iter3 = _regValues.begin() ;
+  list<pair<double, string> >::iterator iter3 = _regValues.begin() ;
   while (iter3!=_regValues.end()) {
 
     if (!_write) {
@@ -391,10 +390,10 @@ Bool_t RooUnitTest::runCompTests()
       }
 
       if (_verb > 0) {
-   cout << "comparing value " << iter3->first << " to benchmark " << iter3->second << " = " << (Double_t)(*ref) << endl ;
+   cout << "comparing value " << iter3->first << " to benchmark " << iter3->second << " = " << (double)(*ref) << endl ;
       }
 
-      if (fabs(iter3->first - (Double_t)(*ref))>vtol() ) {
+      if (fabs(iter3->first - (double)(*ref))>vtol() ) {
         if(_verb >= 0) cout << "RooUnitTest ERROR: comparison of value " << iter3->first <<   " fails comparison with reference " << ref->GetName() << endl ;
         ret = false ;
       }
@@ -404,7 +403,7 @@ Bool_t RooUnitTest::runCompTests()
 
       // Writing mode
 
-      std::cout <<"RooUnitTest: Writing reference Double_t " << iter3->first << " as benchmark " << iter3->second << endl ;
+      std::cout <<"RooUnitTest: Writing reference double " << iter3->first << " as benchmark " << iter3->second << endl ;
       _refFile->cd() ;
       RooDouble* rd = new RooDouble(iter3->first) ;
       rd->Write(iter3->second.c_str()) ;
@@ -571,7 +570,7 @@ void RooUnitTest::clearSilentMode()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Bool_t RooUnitTest::runTest()
+bool RooUnitTest::runTest()
 {
   gMemDir->cd() ;
 

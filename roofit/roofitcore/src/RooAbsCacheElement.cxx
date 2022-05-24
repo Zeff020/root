@@ -25,8 +25,6 @@ interface to pass on calls for server redirection, operation mode
 change calls and constant term optimization management calls
 **/
 
-
-#include "RooFit.h"
 #include "RooAbsCacheElement.h"
 #include "RooAbsArg.h"
 #include "RooArgList.h"
@@ -40,10 +38,10 @@ ClassImp(RooAbsCacheElement);
 ////////////////////////////////////////////////////////////////////////////////
 /// Interface for server redirect calls
 
-Bool_t RooAbsCacheElement::redirectServersHook(const RooAbsCollection& /*newServerList*/, Bool_t /*mustReplaceAll*/,
-                      Bool_t /*nameChange*/, Bool_t /*isRecursive*/)
+bool RooAbsCacheElement::redirectServersHook(const RooAbsCollection& /*newServerList*/, bool /*mustReplaceAll*/,
+                      bool /*nameChange*/, bool /*isRecursive*/)
 {
-  return kFALSE ;
+  return false ;
 }
 
 

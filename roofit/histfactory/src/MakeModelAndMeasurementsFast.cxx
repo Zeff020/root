@@ -8,8 +8,7 @@
  * For the list of contributors see $ROOTSYS/README/CREDITS.             *
  *************************************************************************/
 
-
-
+#include "RooStats/HistFactory/MakeModelAndMeasurementsFast.h"
 
 // from std
 #include <string>
@@ -21,8 +20,6 @@
 // from root
 #include "TFile.h"
 #include "TH1F.h"
-#include "TDOMParser.h"
-#include "TXMLAttr.h"
 #include "TString.h"
 #include "TCanvas.h"
 #include "TStyle.h"
@@ -36,10 +33,8 @@
 // from this package
 #include "RooStats/HistFactory/EstimateSummary.h"
 #include "RooStats/HistFactory/Measurement.h"
-#include "RooStats/HistFactory/HistoToWorkspaceFactoryFast.h"
 #include "RooStats/HistFactory/HistFactoryException.h"
 
-#include "RooStats/HistFactory/MakeModelAndMeasurementsFast.h"
 #include "HFMsgService.h"
 
 using namespace RooFit;
@@ -100,8 +95,8 @@ using namespace RooFit;
   </ul>
   </ul>
 */
-RooWorkspace* RooStats::HistFactory::MakeModelAndMeasurementFast( RooStats::HistFactory::Measurement& measurement ) {
-
+RooWorkspace* RooStats::HistFactory::MakeModelAndMeasurementFast( RooStats::HistFactory::Measurement& measurement, HistoToWorkspaceFactoryFast::Configuration const& cfg)
+{
   // This will be returned
   RooWorkspace* ws = NULL;
   TFile* outFile = NULL;
@@ -166,7 +161,7 @@ RooWorkspace* RooStats::HistFactory::MakeModelAndMeasurementFast( RooStats::Hist
     tableFile =  fopen( tableFileName.c_str(), "a");
 
     cxcoutIHF << "Creating the HistoToWorkspaceFactoryFast factory" << std::endl;
-    HistoToWorkspaceFactoryFast factory( measurement );
+    HistoToWorkspaceFactoryFast factory{measurement, cfg};
 
     // Make the factory, and do some preprocessing
     // HistoToWorkspaceFactoryFast factory(measurement, rowTitle, outFile);
@@ -363,7 +358,7 @@ void RooStats::HistFactory::FitModelAndPlot(const std::string& MeasurementName,
   cxcoutPHF << "\n---------------"
     << "\nDoing "<< channel << " Fit"
     << "\n---------------\n\n" << std::endl;
-  model->fitTo(*simData, Minos(kTRUE), PrintLevel(RooMsgService::instance().isActive(static_cast<TObject*>(nullptr), RooFit::HistFactory, RooFit::DEBUG) ? 1 : -1));
+  model->fitTo(*simData, Minos(true), PrintLevel(RooMsgService::instance().isActive(static_cast<TObject*>(nullptr), RooFit::HistFactory, RooFit::DEBUG) ? 1 : -1));
 
   // If there are no parameters of interest,
   // we exit the function here
@@ -438,10 +433,10 @@ void RooStats::HistFactory::FitModelAndPlot(const std::string& MeasurementName,
   // Save a graph of the profile likelihood curve
   RooCurve* curve=frame->getCurve();
   Int_t curve_N=curve->GetN();
-  Double_t* curve_x=curve->GetX();
+  double* curve_x=curve->GetX();
 
-  Double_t * x_arr = new Double_t[curve_N];
-  Double_t * y_arr_nll = new Double_t[curve_N];
+  double * x_arr = new double[curve_N];
+  double * y_arr_nll = new double[curve_N];
 
   for(int i=0; i<curve_N; i++){
     double f=curve_x[i];
@@ -487,7 +482,7 @@ void RooStats::HistFactory::FitModel(RooWorkspace * combined, std::string data_n
     }
 
     RooAbsPdf* model=combined_config->GetPdf();
-    model->fitTo(*simData, Minos(kTRUE), PrintLevel(1));
+    model->fitTo(*simData, Minos(true), PrintLevel(1));
 
   }
 

@@ -20,8 +20,6 @@
 
 #include "RooStats/HistFactory/PiecewiseInterpolation.h"
 
-#include "RooFit.h"
-
 #include "Riostream.h"
 #include "TBuffer.h"
 
@@ -71,7 +69,7 @@ PiecewiseInterpolation::PiecewiseInterpolation(const char* name, const char* tit
                       const RooArgList& lowSet,
                       const RooArgList& highSet,
                       const RooArgList& paramSet,
-                      Bool_t takeOwnership) :
+                      bool takeOwnership) :
   RooAbsReal(name, title),
   _normIntMgr(this),
   _nominal("!nominal","nominal value", this, (RooAbsReal&)nominal),
@@ -128,7 +126,7 @@ PiecewiseInterpolation::PiecewiseInterpolation(const char* name, const char* tit
 
 
   // Choose special integrator by default
-  specialIntegratorConfig(kTRUE)->method1D().setLabel("RooBinIntegrator") ;
+  specialIntegratorConfig(true)->method1D().setLabel("RooBinIntegrator") ;
   TRACE_CREATE
 }
 
@@ -167,11 +165,11 @@ PiecewiseInterpolation::~PiecewiseInterpolation()
 ////////////////////////////////////////////////////////////////////////////////
 /// Calculate and return current value of self
 
-Double_t PiecewiseInterpolation::evaluate() const
+double PiecewiseInterpolation::evaluate() const
 {
   ///////////////////
-  Double_t nominal = _nominal;
-  Double_t sum(nominal) ;
+  double nominal = _nominal;
+  double sum(nominal) ;
 
   for (unsigned int i=0; i < _paramSet.size(); ++i) {
     auto param = static_cast<RooAbsReal*>(_paramSet.at(i));
@@ -314,16 +312,16 @@ Double_t PiecewiseInterpolation::evaluate() const
 /// Interpolate between input distributions for all values of the observable in `evalData`.
 /// \param[in,out] evalData Struct holding spans pointing to input data. The results of this function will be stored here.
 /// \param[in] normSet Arguments to normalise over.
-void PiecewiseInterpolation::computeBatch(cudaStream_t*, double* sum, size_t /*size*/, RooBatchCompute::DataMap& dataMap) const {
-  auto nominal = dataMap[&*_nominal];
+void PiecewiseInterpolation::computeBatch(cudaStream_t*, double* sum, size_t /*size*/, RooFit::Detail::DataMap const& dataMap) const {
+  auto nominal = dataMap.at(_nominal);
   for(unsigned int j=0; j < nominal.size(); ++j) {
     sum[j] = nominal[j];
   }
 
   for (unsigned int i=0; i < _paramSet.size(); ++i) {
     const double param = static_cast<RooAbsReal*>(_paramSet.at(i))->getVal();
-    auto low   = dataMap[_lowSet.at(i)];
-    auto high  = dataMap[_highSet.at(i)];
+    auto low   = dataMap.at(_lowSet.at(i));
+    auto high  = dataMap.at(_highSet.at(i));
     const int icode = _interpCode[i];
 
     switch(icode) {
@@ -442,13 +440,13 @@ void PiecewiseInterpolation::computeBatch(cudaStream_t*, double* sum, size_t /*s
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Bool_t PiecewiseInterpolation::setBinIntegrator(RooArgSet& allVars)
+bool PiecewiseInterpolation::setBinIntegrator(RooArgSet& allVars)
 {
   if(allVars.getSize()==1){
     RooAbsReal* temp = const_cast<PiecewiseInterpolation*>(this);
-    temp->specialIntegratorConfig(kTRUE)->method1D().setLabel("RooBinIntegrator")  ;
+    temp->specialIntegratorConfig(true)->method1D().setLabel("RooBinIntegrator")  ;
     int nbins = ((RooRealVar*) allVars.first())->numBins();
-    temp->specialIntegratorConfig(kTRUE)->getConfigSection("RooBinIntegrator").setRealValue("numBins",nbins);
+    temp->specialIntegratorConfig(true)->getConfigSection("RooBinIntegrator").setRealValue("numBins",nbins);
     return true;
   }else{
     cout << "Currently BinIntegrator only knows how to deal with 1-d "<<endl;
@@ -537,28 +535,28 @@ Int_t PiecewiseInterpolation::getAnalyticalIntegralWN(RooArgSet& allVars, RooArg
 /// Implement analytical integrations by doing appropriate weighting from  component integrals
 /// functions to integrators of components
 
-Double_t PiecewiseInterpolation::analyticalIntegralWN(Int_t code, const RooArgSet* /*normSet2*/,const char* /*rangeName*/) const
+double PiecewiseInterpolation::analyticalIntegralWN(Int_t code, const RooArgSet* /*normSet2*/,const char* /*rangeName*/) const
 {
   /*
   cout <<"Enter analytic Integral"<<endl;
   printDirty(true);
-  //  _nominal.arg().setDirtyInhibit(kTRUE) ;
+  //  _nominal.arg().setDirtyInhibit(true) ;
   _nominal.arg().setShapeDirty() ;
   RooAbsReal* temp ;
   RooFIter lowIter(_lowSet.fwdIterator()) ;
   while((temp=(RooAbsReal*)lowIter.next())) {
-    //    temp->setDirtyInhibit(kTRUE) ;
+    //    temp->setDirtyInhibit(true) ;
     temp->setShapeDirty() ;
   }
   RooFIter highIter(_highSet.fwdIterator()) ;
   while((temp=(RooAbsReal*)highIter.next())) {
-    //    temp->setDirtyInhibit(kTRUE) ;
+    //    temp->setDirtyInhibit(true) ;
     temp->setShapeDirty() ;
   }
   */
 
   /*
-  RooAbsArg::setDirtyInhibit(kTRUE);
+  RooAbsArg::setDirtyInhibit(true);
   printDirty(true);
   cout <<"done setting dirty inhibit = true"<<endl;
 
@@ -589,19 +587,19 @@ Double_t PiecewiseInterpolation::analyticalIntegralWN(Int_t code, const RooArgSe
   */
 
   /*
-  _nominal.arg().setDirtyInhibit(kFALSE) ;
+  _nominal.arg().setDirtyInhibit(false) ;
   RooFIter lowIter2(_lowSet.fwdIterator()) ;
   while((temp=(RooAbsReal*)lowIter2.next())) {
-    temp->setDirtyInhibit(kFALSE) ;
+    temp->setDirtyInhibit(false) ;
   }
   RooFIter highIter2(_highSet.fwdIterator()) ;
   while((temp=(RooAbsReal*)highIter2.next())) {
-    temp->setDirtyInhibit(kFALSE) ;
+    temp->setDirtyInhibit(false) ;
   }
   */
 
   /*
-  RooAbsArg::setDirtyInhibit(kFALSE);
+  RooAbsArg::setDirtyInhibit(false);
   printDirty(true);
   cout <<"done"<<endl;
   cout << "sum = " <<sum<<endl;
@@ -618,8 +616,8 @@ Double_t PiecewiseInterpolation::analyticalIntegralWN(Int_t code, const RooArgSe
   // old integral, only works for linear and not positive definite
 
   RooAbsReal *low, *high;
-  Double_t value(0);
-  Double_t nominal(0);
+  double value(0);
+  double nominal(0);
 
   // get nominal
   int i=0;
@@ -753,7 +751,7 @@ void PiecewiseInterpolation::printAllInterpCodes(){
 ////////////////////////////////////////////////////////////////////////////////
 /// WVE note: assumes nominal and alternates have identical structure, must add explicit check
 
-std::list<Double_t>* PiecewiseInterpolation::binBoundaries(RooAbsRealLValue& obs, Double_t xlo, Double_t xhi) const
+std::list<double>* PiecewiseInterpolation::binBoundaries(RooAbsRealLValue& obs, double xlo, double xhi) const
 {
   return _nominal.arg().binBoundaries(obs,xlo,xhi) ;
 }
@@ -762,7 +760,7 @@ std::list<Double_t>* PiecewiseInterpolation::binBoundaries(RooAbsRealLValue& obs
 ////////////////////////////////////////////////////////////////////////////////
 /// WVE note: assumes nominal and alternates have identical structure, must add explicit check
 
-Bool_t PiecewiseInterpolation::isBinnedDistribution(const RooArgSet& obs) const
+bool PiecewiseInterpolation::isBinnedDistribution(const RooArgSet& obs) const
 {
   return _nominal.arg().isBinnedDistribution(obs) ;
 }
@@ -771,7 +769,7 @@ Bool_t PiecewiseInterpolation::isBinnedDistribution(const RooArgSet& obs) const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-std::list<Double_t>* PiecewiseInterpolation::plotSamplingHint(RooAbsRealLValue& obs, Double_t xlo, Double_t xhi) const
+std::list<double>* PiecewiseInterpolation::plotSamplingHint(RooAbsRealLValue& obs, double xlo, double xhi) const
 {
   return _nominal.arg().plotSamplingHint(obs,xlo,xhi) ;
 }
@@ -783,7 +781,7 @@ void PiecewiseInterpolation::Streamer(TBuffer &R__b)
 {
    if (R__b.IsReading()) {
       R__b.ReadClassBuffer(PiecewiseInterpolation::Class(),this);
-      specialIntegratorConfig(kTRUE)->method1D().setLabel("RooBinIntegrator") ;
+      specialIntegratorConfig(true)->method1D().setLabel("RooBinIntegrator") ;
       if (_interpCode.empty()) _interpCode.resize(_paramSet.getSize());
    } else {
       R__b.WriteClassBuffer(PiecewiseInterpolation::Class(),this);
@@ -803,7 +801,7 @@ void PiecewiseInterpolation::printMetaArgs(ostream& os) const
     _highIter->Reset() ;
   }
 
-  Bool_t first(kTRUE) ;
+  bool first(true) ;
 
   RooAbsArg* arg1, *arg2 ;
   if (_highSet.getSize()!=0) {
@@ -812,7 +810,7 @@ void PiecewiseInterpolation::printMetaArgs(ostream& os) const
       if (!first) {
    os << " + " ;
       } else {
-   first = kFALSE ;
+   first = false ;
       }
       arg2=(RooAbsArg*)_highIter->Next() ;
       os << arg1->GetName() << " * " << arg2->GetName() ;
@@ -824,7 +822,7 @@ void PiecewiseInterpolation::printMetaArgs(ostream& os) const
       if (!first) {
    os << " + " ;
       } else {
-   first = kFALSE ;
+   first = false ;
       }
       os << arg1->GetName() ;
     }

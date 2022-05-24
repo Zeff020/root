@@ -133,12 +133,12 @@ std::unique_ptr<RActionBase>
 BuildAction(const ColumnNames_t &bl, const std::shared_ptr<ActionResultType> &h, const unsigned int nSlots,
             std::shared_ptr<PrevNodeType> prevNode, ActionTag, const RColumnRegister &colRegister)
 {
-   using Helper_t = FillParHelper<ActionResultType>;
+   using Helper_t = FillHelper<ActionResultType>;
    using Action_t = RAction<Helper_t, PrevNodeType, TTraits::TypeList<ColTypes...>>;
    return std::make_unique<Action_t>(Helper_t(h, nSlots), bl, std::move(prevNode), colRegister);
 }
 
-// Histo1D filling (must handle the special case of distinguishing FillParHelper and FillHelper
+// Histo1D filling (must handle the special case of distinguishing FillHelper and BufferedFillHelper
 template <typename... ColTypes, typename PrevNodeType>
 std::unique_ptr<RActionBase>
 BuildAction(const ColumnNames_t &bl, const std::shared_ptr<::TH1D> &h, const unsigned int nSlots,
@@ -147,11 +147,11 @@ BuildAction(const ColumnNames_t &bl, const std::shared_ptr<::TH1D> &h, const uns
    auto hasAxisLimits = HistoUtils<::TH1D>::HasAxisLimits(*h);
 
    if (hasAxisLimits) {
-      using Helper_t = FillParHelper<::TH1D>;
+      using Helper_t = FillHelper<::TH1D>;
       using Action_t = RAction<Helper_t, PrevNodeType, TTraits::TypeList<ColTypes...>>;
       return std::make_unique<Action_t>(Helper_t(h, nSlots), bl, std::move(prevNode), colRegister);
    } else {
-      using Helper_t = FillHelper;
+      using Helper_t = BufferedFillHelper;
       using Action_t = RAction<Helper_t, PrevNodeType, TTraits::TypeList<ColTypes...>>;
       return std::make_unique<Action_t>(Helper_t(h, nSlots), bl, std::move(prevNode), colRegister);
    }
@@ -264,19 +264,30 @@ BuildAction(const ColumnNames_t &colNames, const std::shared_ptr<SnapshotHelperA
    const auto &outputColNames = snapHelperArgs->fOutputColNames;
    const auto &options = snapHelperArgs->fOptions;
 
+   auto makeIsDefine = [&] {
+      std::vector<bool> isDef;
+      isDef.reserve(sizeof...(ColTypes));
+      for (auto i = 0u; i < sizeof...(ColTypes); ++i)
+         isDef[i] = colRegister.HasName(colNames[i]);
+      return isDef;
+   };
+   std::vector<bool> isDefine = makeIsDefine();
+
    std::unique_ptr<RActionBase> actionPtr;
    if (!ROOT::IsImplicitMTEnabled()) {
       // single-thread snapshot
       using Helper_t = SnapshotHelper<ColTypes...>;
       using Action_t = RAction<Helper_t, PrevNodeType>;
-      actionPtr.reset(new Action_t(Helper_t(filename, dirname, treename, colNames, outputColNames, options), colNames,
-                                   prevNode, colRegister));
+      actionPtr.reset(
+         new Action_t(Helper_t(filename, dirname, treename, colNames, outputColNames, options, std::move(isDefine)),
+                      colNames, prevNode, colRegister));
    } else {
       // multi-thread snapshot
       using Helper_t = SnapshotHelperMT<ColTypes...>;
       using Action_t = RAction<Helper_t, PrevNodeType>;
-      actionPtr.reset(new Action_t(Helper_t(nSlots, filename, dirname, treename, colNames, outputColNames, options),
-                                   colNames, prevNode, colRegister));
+      actionPtr.reset(new Action_t(
+         Helper_t(nSlots, filename, dirname, treename, colNames, outputColNames, options, std::move(isDefine)),
+         colNames, prevNode, colRegister));
    }
    return actionPtr;
 }
@@ -310,6 +321,8 @@ void CheckForRedefinition(const std::string &where, std::string_view definedCol,
 
 void CheckForDefinition(const std::string &where, std::string_view definedColView, const RColumnRegister &customCols,
                         const ColumnNames_t &treeColumns, const ColumnNames_t &dataSourceColumns);
+
+void CheckForNoVariations(const std::string &where, std::string_view definedColView, const RColumnRegister &customCols);
 
 std::string PrettyPrintAddr(const void *const addr);
 
@@ -406,8 +419,6 @@ void JitFilterHelper(F &&f, const char **colsPtr, std::size_t colsSize, std::str
       // The branch of the computation graph that needed this jitted code went out of scope between the type
       // jitting was booked and the time jitting actually happened. Nothing to do other than cleaning up.
       delete wkJittedFilter;
-      // colRegister must be deleted before prevNodeOnHeap because their dtor needs the RLoopManager to be alive
-      // and prevNodeOnHeap is what keeps it alive if the rest of the computation graph is already out of scope
       delete colRegister;
       delete prevNodeOnHeap;
       return;
@@ -472,8 +483,6 @@ void JitDefineHelper(F &&f, const char **colsPtr, std::size_t colsSize, std::str
    // a helper to delete objects allocated before jitting, so that the jitter can share data with lazily jitted code
    auto doDeletes = [&] {
       delete wkJittedDefine;
-      // colRegister must be deleted before prevNodeOnHeap because their dtor needs the RLoopManager to be alive
-      // and prevNodeOnHeap is what keeps it alive if the rest of the computation graph is already out of scope
       delete colRegister;
       delete prevNodeOnHeap;
       delete[] colsPtr;
@@ -522,8 +531,6 @@ void JitVariationHelper(F &&f, const char **colsPtr, std::size_t colsSize, const
       delete[] variationTags;
 
       delete wkJittedVariation;
-      // colRegister must be deleted before prevNodeOnHeap because their dtor needs the RLoopManager to be alive
-      // and prevNodeOnHeap is what keeps it alive if the rest of the computation graph is already out of scope
       delete colRegister;
       delete prevNodeOnHeap;
    };

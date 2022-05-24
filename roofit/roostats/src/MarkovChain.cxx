@@ -99,7 +99,7 @@ void MarkovChain::SetParameters(RooArgSet& parameters)
    fChain = new RooDataSet(DATASET_NAME, "Markov Chain", *fDataEntry,WEIGHT_NAME);
 }
 
-void MarkovChain::Add(RooArgSet& entry, Double_t nllValue, Double_t weight)
+void MarkovChain::Add(RooArgSet& entry, double nllValue, double weight)
 {
    if (fParameters == NULL)
       SetParameters(entry);
@@ -125,7 +125,7 @@ void MarkovChain::AddWithBurnIn(MarkovChain& otherChain, Int_t burnIn)
       }
    }
 }
-void MarkovChain::Add(MarkovChain& otherChain, Double_t discardEntries)
+void MarkovChain::Add(MarkovChain& otherChain, double discardEntries)
 {
    // Discards the first entries. This is different to the definition of
    // burn-in used in the Bayesian calculator where the first n accepted
@@ -142,7 +142,7 @@ void MarkovChain::Add(MarkovChain& otherChain, Double_t discardEntries)
    }
 }
 
-void MarkovChain::AddFast(RooArgSet& entry, Double_t nllValue, Double_t weight)
+void MarkovChain::AddFast(RooArgSet& entry, double nllValue, double weight)
 {
    RooStats::SetParameters(&entry, fDataEntry);
    fNLL->setVal(nllValue);
@@ -219,18 +219,17 @@ THnSparse* MarkovChain::GetAsSparseHist(RooAbsCollection* whichVars) const
       axes.add(*whichVars);
 
    Int_t dim = axes.getSize();
-   std::vector<Double_t> min(dim);
-   std::vector<Double_t> max(dim);
+   std::vector<double> min(dim);
+   std::vector<double> max(dim);
    std::vector<Int_t> bins(dim);
    std::vector<const char *> names(dim);
-   TIterator* it = axes.createIterator();
-   for (Int_t i = 0; i < dim; i++) {
-      RooRealVar * var = dynamic_cast<RooRealVar*>(it->Next() );
-      assert(var != 0);
+   Int_t i = 0;
+   for (auto const *var : static_range_cast<RooRealVar *>(axes)) {
       names[i] = var->GetName();
       min[i] = var->getMin();
       max[i] = var->getMax();
       bins[i] = var->numBins();
+      ++i;
    }
 
    THnSparseF* sparseHist = new THnSparseF("posterior", "MCMC Posterior Histogram",
@@ -244,10 +243,10 @@ THnSparse* MarkovChain::GetAsSparseHist(RooAbsCollection* whichVars) const
    // Fill histogram
    Int_t size = fChain->numEntries();
    const RooArgSet* entry;
-   Double_t* x = new Double_t[dim];
-   for (Int_t i = 0; i < size; i++) {
+   double* x = new double[dim];
+   for ( i = 0; i < size; i++) {
       entry = fChain->get(i);
-      it->Reset();
+
       for (Int_t ii = 0; ii < dim; ii++) {
          //LM:  doing this is probably quite slow
          x[ii] = entry->getRealValue( names[ii]);
@@ -255,12 +254,11 @@ THnSparse* MarkovChain::GetAsSparseHist(RooAbsCollection* whichVars) const
       }
    }
    delete[] x;
-   delete it;
 
    return sparseHist;
 }
 
-Double_t MarkovChain::NLL(Int_t i) const
+double MarkovChain::NLL(Int_t i) const
 {
    // kbelasco: how to do this?
    //fChain->get(i);
@@ -268,7 +266,7 @@ Double_t MarkovChain::NLL(Int_t i) const
    return fChain->get(i)->getRealValue(NLL_NAME);
 }
 
-Double_t MarkovChain::NLL() const
+double MarkovChain::NLL() const
 {
    // kbelasco: how to do this?
    //fChain->get();
@@ -276,12 +274,12 @@ Double_t MarkovChain::NLL() const
    return fChain->get()->getRealValue(NLL_NAME);
 }
 
-Double_t MarkovChain::Weight() const
+double MarkovChain::Weight() const
 {
    return fChain->weight();
 }
 
-Double_t MarkovChain::Weight(Int_t i) const
+double MarkovChain::Weight(Int_t i) const
 {
    fChain->get(i);
    return fChain->weight();

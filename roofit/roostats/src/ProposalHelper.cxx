@@ -42,10 +42,10 @@ using namespace RooFit;
 using namespace RooStats;
 using namespace std;
 
-//static const Double_t DEFAULT_UNI_FRAC = 0.10;
-static const Double_t DEFAULT_CLUES_FRAC = 0.20;
-//static const Double_t SIGMA_RANGE_DIVISOR = 6;
-static const Double_t SIGMA_RANGE_DIVISOR = 5;
+//static const double DEFAULT_UNI_FRAC = 0.10;
+static const double DEFAULT_CLUES_FRAC = 0.20;
+//static const double SIGMA_RANGE_DIVISOR = 6;
+static const double SIGMA_RANGE_DIVISOR = 5;
 //static const Int_t DEFAULT_CACHE_SIZE = 100;
 //static const Option_t* CLUES_OPTIONS = "a";
 
@@ -55,11 +55,11 @@ ProposalHelper::ProposalHelper()
 {
    fPdfProp = new PdfProposal();
    fVars = NULL;
-   fOwnsPdfProp = kTRUE;
-   fOwnsPdf = kFALSE;
-   fOwnsCluesPdf = kFALSE;
-   fOwnsVars = kFALSE;
-   fUseUpdates = kFALSE;
+   fOwnsPdfProp = true;
+   fOwnsPdf = false;
+   fOwnsCluesPdf = false;
+   fOwnsVars = false;
+   fUseUpdates = false;
    fPdf = NULL;
    fSigmaRangeDivisor = SIGMA_RANGE_DIVISOR;
    fCluesPdf = NULL;
@@ -101,10 +101,10 @@ ProposalFunction* ProposalHelper::GetProposalFunction()
    RooAddPdf* addPdf = new RooAddPdf("proposalFunction", "Proposal Density",
          *components, *coeffs);
    fPdfProp->SetPdf(*addPdf);
-   fPdfProp->SetOwnsPdf(kTRUE);
+   fPdfProp->SetOwnsPdf(true);
    if (fCacheSize > 0)
       fPdfProp->SetCacheSize(fCacheSize);
-   fOwnsPdfProp = kFALSE;
+   fOwnsPdfProp = false;
    return fPdfProp;
 }
 
@@ -122,13 +122,11 @@ void ProposalHelper::CreatePdf()
    }
    RooArgList* xVec = new RooArgList();
    RooArgList* muVec = new RooArgList();
-   TIterator* it = fVars->createIterator();
-   RooRealVar* r;
-   RooRealVar* clone;
-   while ((r = (RooRealVar*)it->Next()) != NULL) {
+   RooRealVar* clone; 
+   for (auto *r : static_range_cast<RooRealVar *> (*fVars)){
       xVec->add(*r);
       TString cloneName = TString::Format("%s%s", "mu__", r->GetName());
-      clone = (RooRealVar*)r->clone(cloneName.Data());
+      clone = static_cast<RooRealVar*>(r->clone(cloneName.Data()));
       muVec->add(*clone);
       if (fUseUpdates)
          fPdfProp->AddMapping(*clone, *r);
@@ -139,7 +137,6 @@ void ProposalHelper::CreatePdf()
                                   *fCovMatrix);
    delete xVec;
    delete muVec;
-   delete it;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -151,7 +148,7 @@ void ProposalHelper::CreateCovMatrix(RooArgList& xVec)
    RooRealVar* r;
    for (Int_t i = 0; i < size; i++) {
       r = (RooRealVar*)xVec.at(i);
-      Double_t range = r->getMax() - r->getMin();
+      double range = r->getMax() - r->getMin();
       (*fCovMatrix)(i,i) = range / fSigmaRangeDivisor;
    }
 }

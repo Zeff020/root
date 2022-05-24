@@ -1426,10 +1426,12 @@ Int_t TH1::BufferEmpty(Int_t action)
    }
    if (CanExtendAllAxes() || (fXaxis.GetXmax() <= fXaxis.GetXmin())) {
       //find min, max of entries in buffer
-      Double_t xmin = fBuffer[2];
-      Double_t xmax = xmin;
-      for (Int_t i=1;i<nbentries;i++) {
+      Double_t xmin = TMath::Infinity();
+      Double_t xmax = -TMath::Infinity();
+      for (Int_t i=0;i<nbentries;i++) {
          Double_t x = fBuffer[2*i+2];
+         // skip infinity or NaN values
+         if (!std::isfinite(x)) continue;
          if (x < xmin) xmin = x;
          if (x > xmax) xmax = x;
       }
@@ -4138,6 +4140,10 @@ TFitResultPtr TH1::Fit(const char *fname ,Option_t *option ,Option_t *goption, D
 ///      TF1 *f1 = new TF1("f1", "gaus", 1, 3);
 ///      histo->Fit("f1", "R");
 /// ~~~
+///
+/// The fitting range is also limited by the histogram range defined using TAxis::SetRange
+/// or TAxis::SetRangeUser. Therefore the fitting range is the smallest range between the
+/// histogram one and the one defined by one of the two previous options described above.
 ///
 /// \anchor HFitInitial
 /// ### Setting initial conditions

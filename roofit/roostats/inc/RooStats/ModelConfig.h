@@ -174,12 +174,9 @@ public:
      if (!SetHasOnlyParameters(set,"ModelConfig::SetGlobalObservables")) return ;
 
       // make global observables constant
-      RooFIter iter = set.fwdIterator();
-      RooAbsArg *arg = iter.next();
-      while(arg != NULL) {
-         arg->setAttribute("Constant", kTRUE);
-         arg = iter.next();
-      }
+     for (auto *arg : set){
+         arg->setAttribute("Constant", true);
+     }
 
       fGlobalObsName=std::string(GetName()) + "_GlobalObservables";
       DefineSetInWS(fGlobalObsName.c_str(), set);
@@ -274,7 +271,7 @@ public:
 protected:
 
    /// helper function to check that content of a given set is exclusively parameters
-   Bool_t SetHasOnlyParameters(const RooArgSet& set, const char* errorMsgPrefix=0) ;
+   bool SetHasOnlyParameters(const RooArgSet& set, const char* errorMsgPrefix=0) ;
 
    /// helper functions to define a set in the WS
    void DefineSetInWS(const char* name, const RooArgSet& set);

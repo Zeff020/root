@@ -563,6 +563,7 @@ public:
       RDFInternal::CheckValidCppVarName(name, where);
       RDFInternal::CheckForDefinition(where, name, fColRegister, fLoopManager->GetBranchNames(),
                                       fDataSource ? fDataSource->GetColumnNames() : ColumnNames_t{});
+      RDFInternal::CheckForNoVariations(where, name, fColRegister);
 
       auto upcastNodeOnHeap = RDFInternal::MakeSharedOnHeap(RDFInternal::UpcastNode(fProxiedPtr));
       auto jittedDefine = RDFInternal::BookDefineJit(name, expression, *fLoopManager, fDataSource, fColRegister,
@@ -577,6 +578,7 @@ public:
       return newInterface;
    }
 
+   // clang-format off
    ////////////////////////////////////////////////////////////////////////////
    /// \brief Define a new column that is updated when the input sample changes.
    /// \param[in] name The name of the defined column.
@@ -595,6 +597,8 @@ public:
    /// processed or to inject a callback into the event loop that is only called when the processing of a new sample
    /// starts rather than at every entry.
    ///
+   /// The callable will be invoked once per input TTree or once per multi-thread task, whichever is more often.
+   ///
    /// ### Example usage:
    /// ~~~{.cpp}
    /// ROOT::RDataFrame df{"mytree", {"sample1.root","sample2.root"}};
@@ -602,6 +606,7 @@ public:
    ///                    [](unsigned int slot, const ROOT::RDF::RSampleInfo &id)
    ///                    { return id.Contains("sample1") ? 1.0f : 2.0f; });
    /// ~~~
+   // clang-format on
    // TODO we could SFINAE on F's signature to provide friendlier compilation errors in case of signature mismatch
    template <typename F, typename RetType_t = typename TTraits::CallableTraits<F>::ret_type>
    RInterface<Proxied, DS_t> DefinePerSample(std::string_view name, F expression)
@@ -632,6 +637,7 @@ public:
       return newInterface;
    }
 
+   // clang-format off
    ////////////////////////////////////////////////////////////////////////////
    /// \brief Define a new column that is updated when the input sample changes.
    /// \param[in] name The name of the defined column.
@@ -663,6 +669,12 @@ public:
    /// df = ROOT.RDataFrame("mytree", ["sample1.root","sample2.root"])
    /// df.DefinePerSample("weightsbysample", "weights(rdfslot_, rdfsampleinfo_)")
    /// ~~~
+   ///
+   /// \note
+   /// Differently from what happens in Define(), the string expression passed to DefinePerSample cannot contain
+   /// column names other than those mentioned above: the expression is evaluated once before the processing of the
+   /// sample even starts, so column values are not accessible.
+   // clang-format on
    RInterface<Proxied, DS_t> DefinePerSample(std::string_view name, std::string_view expression)
    {
       RDFInternal::CheckValidCppVarName(name, "DefinePerSample");
@@ -687,7 +699,7 @@ public:
    }
 
    /// \brief Register systematic variations for an existing column.
-   /// \param[in] colNames names of the columns for which varied values are provided.
+   /// \param[in] colName name of the column for which varied values are provided.
    /// \param[in] expression a callable that evaluates the varied values for the specified columns. The callable can
    ///            take any column values as input, similarly to what happens with Filter and Define calls. It must
    ///            return an RVec of varied values, one for each variation tag, in the same order as the tags.
@@ -720,6 +732,20 @@ public:
    /// ~~~
    template <typename F>
    RInterface<Proxied, DS_t> Vary(std::string_view colName, F &&expression, const ColumnNames_t &inputColumns,
+                                  const std::vector<std::string> &variationTags, std::string_view variationName = "")
+   {
+      std::vector<std::string> colNames{{std::string(colName)}};
+      const std::string theVariationName{variationName.empty() ? colName : variationName};
+
+      return Vary(std::move(colNames), std::forward<F>(expression), inputColumns, variationTags, theVariationName);
+   }
+
+   /// \brief Register systematic variations for an existing columns using auto-generated variation tags.
+   /// This overload of Vary takes a nVariations parameter instead of a list of tag names. Tag names
+   /// will be auto-generated as the sequence 0...nVariations-1.
+   /// See the documentation of the previous overload for more information.
+   template <typename F>
+   RInterface<Proxied, DS_t> Vary(std::string_view colName, F &&expression, const ColumnNames_t &inputColumns,
                                   std::size_t nVariations, std::string_view variationName = "")
    {
       R__ASSERT(nVariations > 0 && "Must have at least one variation.");
@@ -732,20 +758,6 @@ public:
       const std::string theVariationName{variationName.empty() ? colName : variationName};
 
       return Vary(colName, std::forward<F>(expression), inputColumns, std::move(variationTags), theVariationName);
-   }
-
-   /// \brief Register systematic variations for an existing columns using auto-generated variation tags.
-   /// This overload of Vary takes a nVariations parameter instead of a list of tag names. Tag names
-   /// will be auto-generated as the sequence 0...nVariations-1.
-   /// See the documentation of the previous overload for more information.
-   template <typename F>
-   RInterface<Proxied, DS_t> Vary(std::string_view colName, F &&expression, const ColumnNames_t &inputColumns,
-                                  const std::vector<std::string> &variationTags, std::string_view variationName = "")
-   {
-      std::vector<std::string> colNames{{std::string(colName)}};
-      const std::string theVariationName{variationName.empty() ? colName : variationName};
-
-      return Vary(std::move(colNames), std::forward<F>(expression), inputColumns, variationTags, theVariationName);
    }
 
    /// \brief Register a systematic variation that affects multiple columns simultaneously.
@@ -767,55 +779,15 @@ public:
    Vary(const std::vector<std::string> &colNames, F &&expression, const ColumnNames_t &inputColumns,
         const std::vector<std::string> &variationTags, std::string_view variationName)
    {
-      /* SANITY CHECKS BEGIN */
-      R__ASSERT(variationTags.size() > 0 && "Must have at least one variation.");
-      R__ASSERT(colNames.size() > 0 && "Must have at least one varied column.");
-      R__ASSERT(!variationName.empty() && "Must provide a variation name.");
-
-      for (auto &colName : colNames) {
-         RDFInternal::CheckValidCppVarName(colName, "Vary");
-         RDFInternal::CheckForDefinition("Vary", colName, fColRegister, fLoopManager->GetBranchNames(),
-                                         fDataSource ? fDataSource->GetColumnNames() : ColumnNames_t{});
-      }
-      RDFInternal::CheckValidCppVarName(variationName, "Vary");
-
       using F_t = std::decay_t<F>;
       using ColTypes_t = typename TTraits::CallableTraits<F_t>::arg_types;
+      using RetType = typename TTraits::CallableTraits<F_t>::ret_type;
       constexpr auto nColumns = ColTypes_t::list_size;
+
+      SanityChecksForVary<RetType>(colNames, variationTags, variationName);
+
       const auto validColumnNames = GetValidatedColumnNames(nColumns, inputColumns);
       CheckAndFillDSColumns(validColumnNames, ColTypes_t{});
-
-      using RetType = typename TTraits::CallableTraits<F_t>::ret_type;
-      static_assert(RDFInternal::IsRVec<RetType>::value, "Vary expressions must return an RVec.");
-
-      if (colNames.size() > 1) {
-         constexpr bool hasInnerRVec = RDFInternal::IsRVec<typename RetType::value_type>::value;
-         if (!hasInnerRVec)
-            throw std::runtime_error("This Vary call is varying multiple columns simultaneously but the expression "
-                                     "does not return an RVec of RVecs.");
-
-         auto colTypes = GetColumnTypeNamesList(colNames);
-         auto allColTypesEqual =
-            std::all_of(colTypes.begin() + 1, colTypes.end(), [&](const std::string &t) { return t == colTypes[0]; });
-         if (!allColTypesEqual)
-            throw std::runtime_error("Cannot simultaneously vary multiple columns of different types.");
-
-         const auto &innerTypeID = typeid(RDFInternal::InnerValueType_t<RetType>);
-
-         for (auto i = 0u; i < colTypes.size(); ++i) {
-            if (innerTypeID != RDFInternal::TypeName2TypeID(colTypes[i]))
-               throw std::runtime_error("Varied values for column \"" + colNames[i] + "\" have a different type (" +
-                                        RDFInternal::TypeID2TypeName(innerTypeID) + ") than the nominal value (" +
-                                        colTypes[i] + ").");
-         }
-      } else {
-         const auto &retTypeID = typeid(typename RetType::value_type);
-         const auto &colName = colNames[0]; // we have only one element in there
-         if (retTypeID != RDFInternal::TypeName2TypeID(GetColumnType(colName)))
-            throw std::runtime_error("Varied values for column \"" + colName + "\" have a different type (" +
-                                     RDFInternal::TypeID2TypeName(retTypeID) + ") than the nominal value (" +
-                                     GetColumnType(colName) + ").");
-      }
 
       auto retTypeName = RDFInternal::TypeID2TypeName(typeid(RetType));
       if (retTypeName.empty()) {
@@ -824,14 +796,6 @@ public:
          const auto demangledType = RDFInternal::DemangleTypeIdName(typeid(RetType));
          retTypeName = "CLING_UNKNOWN_TYPE_" + demangledType;
       }
-
-      // when varying multiple columns, they must be different columns
-      if (colNames.size() > 1) {
-         std::set<std::string> uniqueCols(colNames.begin(), colNames.end());
-         if (uniqueCols.size() != colNames.size())
-            throw std::logic_error("The same column was passed multiple times the same column twice: ");
-      }
-      /* SANITY CHECKS END */
 
       auto variation = std::make_shared<RDFInternal::RVariation<F_t>>(
          colNames, variationName, std::forward<F>(expression), variationTags, retTypeName, fColRegister, *fLoopManager,
@@ -974,7 +938,7 @@ public:
       if (colNames.size() > 1) {
          std::set<std::string> uniqueCols(colNames.begin(), colNames.end());
          if (uniqueCols.size() != colNames.size())
-            throw std::logic_error("The same column was passed multiple times the same column twice: ");
+            throw std::logic_error("A column name was passed to the same Vary invocation multiple times.");
       }
 
       auto upcastNodeOnHeap = RDFInternal::MakeSharedOnHeap(RDFInternal::UpcastNode(fProxiedPtr));
@@ -1163,6 +1127,12 @@ public:
       columnNames.insert(columnNames.end(), definedColumns.begin(), definedColumns.end());
       columnNames.insert(columnNames.end(), treeBranchNames.begin(), treeBranchNames.end());
       columnNames.insert(columnNames.end(), dsColumnsWithoutSizeColumns.begin(), dsColumnsWithoutSizeColumns.end());
+
+      // De-duplicate column names. Currently the only way this can happen is if a column coming from a tree or
+      // data-source is Redefine'd.
+      std::set<std::string> uniqueCols(columnNames.begin(), columnNames.end());
+      columnNames.assign(uniqueCols.begin(), uniqueCols.end());
+
       const auto selectedColumns = RDFInternal::ConvertRegexToColumns(columnNames, columnNameRegexp, "Snapshot");
       return Snapshot(treename, filename, selectedColumns, options);
    }
@@ -2990,6 +2960,9 @@ public:
    /// * std::shared_ptr<Result_t> GetResultPtr() const: return a shared_ptr to the result of this action (of type
    ///   Result_t). The RResultPtr returned by Book will point to this object. Note that this method can be called
    ///   before Initialize(), because the RResultPtr is constructed before the event loop is started.
+   /// * ROOT::RDF::SampleCallback_t GetSampleCallback(): optional. If present, it must return a callable with the
+   ///   appropriate signature (see ROOT::RDF::SampleCallback_t) that will be invoked at the beginning of the processing
+   ///   of every sample, as per with DefinePerSample().
    ///
    /// In case this is called without specifying column types, jitting is used,
    /// and the Helper class needs to be known to the interpreter.<br>
@@ -3230,6 +3203,7 @@ private:
       } else {
          RDFInternal::CheckForDefinition(where, name, fColRegister, fLoopManager->GetBranchNames(),
                                          fDataSource ? fDataSource->GetColumnNames() : ColumnNames_t{});
+         RDFInternal::CheckForNoVariations(where, name, fColRegister);
       }
 
       using ArgTypes_t = typename TTraits::CallableTraits<F>::arg_types;
@@ -3349,6 +3323,68 @@ private:
                                          "columns! The action helper type was ") +
                              typeid(Helper).name());
       return {};
+   }
+
+   template <typename RetType>
+   void SanityChecksForVary(const std::vector<std::string> &colNames, const std::vector<std::string> &variationTags,
+                            std::string_view variationName)
+   {
+      R__ASSERT(variationTags.size() > 0 && "Must have at least one variation.");
+      R__ASSERT(colNames.size() > 0 && "Must have at least one varied column.");
+      R__ASSERT(!variationName.empty() && "Must provide a variation name.");
+
+      for (auto &colName : colNames) {
+         RDFInternal::CheckValidCppVarName(colName, "Vary");
+         RDFInternal::CheckForDefinition("Vary", colName, fColRegister, fLoopManager->GetBranchNames(),
+                                         fDataSource ? fDataSource->GetColumnNames() : ColumnNames_t{});
+      }
+      RDFInternal::CheckValidCppVarName(variationName, "Vary");
+
+      static_assert(RDFInternal::IsRVec<RetType>::value, "Vary expressions must return an RVec.");
+
+      if (colNames.size() > 1) { // we are varying multiple columns simultaneously, RetType is RVec<RVec<T>>
+         constexpr bool hasInnerRVec = RDFInternal::IsRVec<typename RetType::value_type>::value;
+         if (!hasInnerRVec)
+            throw std::runtime_error("This Vary call is varying multiple columns simultaneously but the expression "
+                                     "does not return an RVec of RVecs.");
+
+         auto colTypes = GetColumnTypeNamesList(colNames);
+         auto allColTypesEqual =
+            std::all_of(colTypes.begin() + 1, colTypes.end(), [&](const std::string &t) { return t == colTypes[0]; });
+         if (!allColTypesEqual)
+            throw std::runtime_error("Cannot simultaneously vary multiple columns of different types.");
+
+         const auto &innerTypeID = typeid(RDFInternal::InnerValueType_t<RetType>);
+
+         const auto &definesMap = fColRegister.GetColumns();
+         for (auto i = 0u; i < colTypes.size(); ++i) {
+            const auto it = definesMap.find(colNames[i]);
+            const auto &expectedTypeID =
+               it == definesMap.end() ? RDFInternal::TypeName2TypeID(colTypes[i]) : it->second->GetTypeId();
+            if (innerTypeID != expectedTypeID)
+               throw std::runtime_error("Varied values for column \"" + colNames[i] + "\" have a different type (" +
+                                        RDFInternal::TypeID2TypeName(innerTypeID) + ") than the nominal value (" +
+                                        colTypes[i] + ").");
+         }
+      } else { // we are varying a single column, RetType is RVec<T>
+         const auto &retTypeID = typeid(typename RetType::value_type);
+         const auto &colName = colNames[0]; // we have only one element in there
+         const auto &definesMap = fColRegister.GetColumns();
+         const auto it = definesMap.find(colName);
+         const auto &expectedTypeID =
+            it == definesMap.end() ? RDFInternal::TypeName2TypeID(GetColumnType(colName)) : it->second->GetTypeId();
+         if (retTypeID != expectedTypeID)
+            throw std::runtime_error("Varied values for column \"" + colName + "\" have a different type (" +
+                                     RDFInternal::TypeID2TypeName(retTypeID) + ") than the nominal value (" +
+                                     GetColumnType(colName) + ").");
+      }
+
+      // when varying multiple columns, they must be different columns
+      if (colNames.size() > 1) {
+         std::set<std::string> uniqueCols(colNames.begin(), colNames.end());
+         if (uniqueCols.size() != colNames.size())
+            throw std::logic_error("A column name was passed to the same Vary invocation multiple times.");
+      }
    }
 
 protected:
