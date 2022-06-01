@@ -15,7 +15,10 @@
 
 #include <RooFit/TestStatistics/RooAbsL.h>
 #include "RooAbsReal.h"
+#include <RooChangeTracker.h>
 #include <vector>
+
+#include "Math/Util.h" // KahanSum
 
 // forward declarations
 class RooAbsPdf;
@@ -27,6 +30,7 @@ namespace TestStatistics {
 class RooBinnedL : public RooAbsL {
 public:
    RooBinnedL(RooAbsPdf *pdf, RooAbsData *data);
+   ~RooBinnedL();
    ROOT::Math::KahanSum<double>
    evaluatePartition(Section bins, std::size_t components_begin, std::size_t components_end) override;
 
@@ -35,6 +39,8 @@ public:
 private:
    mutable bool _first = true;        ///<!
    mutable std::vector<double> _binw; ///<!
+   RooChangeTracker* _paramTracker;
+   mutable ROOT::Math::KahanSum<double> _cachedResult = 0;
 };
 
 } // namespace TestStatistics

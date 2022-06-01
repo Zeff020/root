@@ -14,6 +14,10 @@
 #define ROOT_ROOFIT_TESTSTATISTICS_RooUnbinnedL
 
 #include <RooFit/TestStatistics/RooAbsL.h>
+#include <RooChangeTracker.h>
+
+#include "Math/Util.h" // KahanSum
+
 
 // forward declarations
 class RooAbsPdf;
@@ -31,6 +35,7 @@ public:
    RooUnbinnedL(RooAbsPdf *pdf, RooAbsData *data, RooAbsL::Extended extended = RooAbsL::Extended::Auto,
                 bool useBatchedEvaluations = false);
    RooUnbinnedL(const RooUnbinnedL &other);
+   ~RooUnbinnedL() ;
    bool setApplyWeightSquared(bool flag);
 
    ROOT::Math::KahanSum<double>
@@ -45,6 +50,8 @@ private:
    mutable bool _first = true;                                     ///<!
    bool useBatchedEvaluations_ = false;
    mutable std::unique_ptr<RooBatchCompute::RunContext> evalData_; ///<! Struct to store function evaluation workspaces.
+   RooChangeTracker* _paramTracker ;
+   mutable ROOT::Math::KahanSum<double> _cachedResult = 0;
 };
 
 } // namespace TestStatistics

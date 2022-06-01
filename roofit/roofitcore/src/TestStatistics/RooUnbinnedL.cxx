@@ -32,8 +32,6 @@ In extended mode, a
 #include "RooNLLVar.h"  // RooNLLVar::ComputeScalar
 #include "RunContext.h" // complete type BatchCompute::RunContext
 
-#include "Math/Util.h" // KahanSum
-
 namespace RooFit {
 namespace TestStatistics {
 
@@ -42,12 +40,21 @@ RooUnbinnedL::RooUnbinnedL(RooAbsPdf *pdf, RooAbsData *data, RooAbsL::Extended e
    : RooAbsL(RooAbsL::ClonePdfData{pdf, data}, data->numEntries(), 1, extended),
      useBatchedEvaluations_(useBatchedEvaluations)
 {
+   RooArgSet* params = pdf->getParameters(data) ;
+   _paramTracker = new RooChangeTracker("chtracker","change tracker",*params,true) ;
+   delete params ;
 }
 
 RooUnbinnedL::RooUnbinnedL(const RooUnbinnedL &other)
    : RooAbsL(other), apply_weight_squared(other.apply_weight_squared), _first(other._first),
      useBatchedEvaluations_(other.useBatchedEvaluations_)
 {
+   _paramTracker = new RooChangeTracker(*other._paramTracker) ;
+}
+
+RooUnbinnedL::~RooUnbinnedL()
+{
+ if (_paramTracker) delete _paramTracker ;
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -82,6 +89,9 @@ RooUnbinnedL::evaluatePartition(Section events, std::size_t /*components_begin*/
    // expensive than that, we tolerate the additional cost...
    ROOT::Math::KahanSum<double> result;
    double sumWeight;
+
+   // Do not reevaluate likelihood if parameters have not changed
+   if (!_paramTracker->hasChanged(true) & (_cachedResult != 0)) return _cachedResult;
 
    data_->store()->recalculateCache(nullptr, events.begin(N_events_), events.end(N_events_), 1, true);
 
@@ -160,6 +170,7 @@ RooUnbinnedL::evaluatePartition(Section events, std::size_t /*components_begin*/
       pdf_->wireAllCaches();
    }
 
+   _cachedResult = result;
    return result;
 }
 

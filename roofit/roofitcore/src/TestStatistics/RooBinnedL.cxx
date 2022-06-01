@@ -33,7 +33,6 @@ In extended mode, a
 #include "RooRealVar.h"
 
 #include "TMath.h"
-#include "Math/Util.h" // KahanSum
 
 namespace RooFit {
 namespace TestStatistics {
@@ -50,6 +49,10 @@ RooBinnedL::RooBinnedL(RooAbsPdf *pdf, RooAbsData *data)
 
    // The Active label will disable pdf integral calculations
    pdf->setAttribute("BinnedLikelihoodActive");
+
+   RooArgSet* params = pdf->getParameters(data) ;
+   _paramTracker = new RooChangeTracker("chtracker","change tracker",*params,true) ;
+   delete params ;
 
    RooArgSet *obs = pdf->getObservables(data);
    if (obs->getSize() != 1) {
@@ -72,6 +75,11 @@ RooBinnedL::RooBinnedL(RooAbsPdf *pdf, RooAbsData *data)
    }
 }
 
+RooBinnedL::~RooBinnedL()
+{
+ if (_paramTracker) delete _paramTracker ;
+}
+
 //////////////////////////////////////////////////////////////////////////////////
 /// Calculate and return likelihood on subset of data from firstEvent to lastEvent
 /// processed with a step size of 'stepSize'. If this an extended likelihood and
@@ -86,6 +94,9 @@ RooBinnedL::evaluatePartition(Section bins, std::size_t /*components_begin*/, st
    // straight addition, but since evaluating the PDF is usually much more
    // expensive than that, we tolerate the additional cost...
    ROOT::Math::KahanSum<double> result;
+
+   // Do not reevaluate likelihood if parameters have not changed
+   if (!_paramTracker->hasChanged(true) & (_cachedResult != 0)) return _cachedResult;
 
 //   data->store()->recalculateCache(_projDeps, firstEvent, lastEvent, stepSize, (_binnedPdf?false:true));
    // TODO: check when we might need _projDeps (it seems to be mostly empty); ties in with TODO below
@@ -137,6 +148,7 @@ RooBinnedL::evaluatePartition(Section bins, std::size_t /*components_begin*/, st
       pdf_->wireAllCaches();
    }
 
+   _cachedResult = result;
    return result;
 }
 
